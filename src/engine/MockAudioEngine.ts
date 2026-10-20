@@ -26,7 +26,6 @@ const MOCK_SOURCES: AudioSource[] = [
 export class MockAudioEngine implements AudioEngine {
   readonly label = '模拟引擎';
   readonly native = false;
-  readonly supportsEq = true;
 
   private sources = structuredClone(MOCK_SOURCES);
   private devices = structuredClone(MOCK_DEVICES);
@@ -38,6 +37,8 @@ export class MockAudioEngine implements AudioEngine {
       sources: structuredClone(this.sources),
       devices: structuredClone(this.devices),
       defaultDeviceId: 'hk',
+      // 模拟引擎假装曲线一直生效
+      eq: { available: true, sinkName: null },
     };
   }
 

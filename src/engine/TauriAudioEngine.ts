@@ -16,9 +16,12 @@ interface NativeSnapshot {
     volume: number;
     deviceId: string;
     routable: boolean;
+    eqActive: boolean;
+    eqError: string | null;
   }>;
   devices: Array<{ id: string; name: string; detail: string; kind: DeviceKind; volume: number }>;
   defaultDeviceId: string;
+  eq: { available: boolean; sinkName: string | null };
 }
 
 export function isTauri(): boolean {
@@ -35,6 +38,7 @@ export function fromNative(native: NativeSnapshot): EngineSnapshot {
     })),
     devices: native.devices.map((d) => ({ ...d, code: abbreviate(d.name) })),
     defaultDeviceId: native.defaultDeviceId,
+    eq: native.eq,
   };
 }
 
@@ -42,19 +46,25 @@ export function fromNative(native: NativeSnapshot): EngineSnapshot {
 export class TauriAudioEngine implements AudioEngine {
   readonly label = 'Windows 音频';
   readonly native = true;
-  // 按应用的声音曲线需要在信号链里插入处理，后端还没实现
-  readonly supportsEq = false;
 
+  /** 最近一次快照里曲线能否生效；不能时不下发曲线（下发了也只会报错） */
+  private eqAvailable = false;
   private levels = new EventHub<LevelFrame>('audio://levels');
   private snapshots = new EventHub<NativeSnapshot>('audio://snapshot');
   private errorListeners = new Set<(message: string) => void>();
 
   async load(): Promise<EngineSnapshot> {
-    return fromNative(await invoke<NativeSnapshot>('audio_snapshot'));
+    const snapshot = fromNative(await invoke<NativeSnapshot>('audio_snapshot'));
+    this.eqAvailable = snapshot.eq.available;
+    return snapshot;
   }
 
   onSnapshot(listener: (snapshot: EngineSnapshot) => void): () => void {
-    return this.snapshots.subscribe((native) => listener(fromNative(native)));
+    return this.snapshots.subscribe((native) => {
+      const snapshot = fromNative(native);
+      this.eqAvailable = snapshot.eq.available;
+      listener(snapshot);
+    });
   }
 
   onLevels(listener: (frame: LevelFrame) => void): () => void {
@@ -78,8 +88,8 @@ export class TauriAudioEngine implements AudioEngine {
     this.call('audio_set_source_volume', { source, volume });
   }
 
-  setSourceEq(): void {
-    // 见 supportsEq
+  setSourceEq(source: string, gains: readonly number[]): void {
+    if (this.eqAvailable) this.call('audio_set_source_eq', { source, gains: [...gains] });
   }
 
   setDeviceVolume(device: string, volume: number): void {

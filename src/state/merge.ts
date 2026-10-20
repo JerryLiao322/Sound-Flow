@@ -58,5 +58,5 @@ export function mergeSnapshot(
   });
 
   const selectedId = sources.some((s) => s.id === state.selectedId) ? state.selectedId : (sources[0]?.id ?? '');
-  return { sources, devices, selectedId, defaultDeviceId: snapshot.defaultDeviceId };
+  return { sources, devices, selectedId, defaultDeviceId: snapshot.defaultDeviceId, eq: snapshot.eq };
 }

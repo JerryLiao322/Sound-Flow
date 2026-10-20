@@ -9,8 +9,11 @@
 // 归并、ID 换算这些辅助函数只有 Windows 实现在用，其它平台上只跑测试
 #[cfg_attr(not(windows), allow(dead_code))]
 mod model;
+pub mod dsp;
+#[cfg_attr(not(windows), allow(dead_code))]
+mod routes_file;
 
-pub use model::{from_percent, to_percent, AudioError, Device, DeviceKind, Result, Snapshot, Source, SourceKind};
+pub use model::{from_percent, to_percent, AudioError, Device, DeviceKind, EqStatus, Result, Snapshot, Source, SourceKind};
 
 #[cfg(windows)]
 mod win;

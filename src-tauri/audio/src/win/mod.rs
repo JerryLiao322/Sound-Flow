@@ -1,7 +1,10 @@
+mod eq_stream;
 mod policy;
 mod process;
 
 use std::collections::{BTreeSet, HashMap, HashSet};
+use std::path::PathBuf;
+use std::time::{Duration, Instant};
 
 use windows::core::{Interface, PWSTR};
 use windows::Win32::Devices::FunctionDiscovery::{PKEY_DeviceInterface_FriendlyName, PKEY_Device_DeviceDesc, PKEY_Device_FriendlyName};
@@ -17,13 +20,18 @@ use windows::Win32::System::Com::{CoCreateInstance, CoInitializeEx, CoTaskMemFre
 use windows::Win32::System::Threading::GetCurrentProcessId;
 use windows::Win32::UI::Shell::PropertiesSystem::IPropertyStore;
 
+use crate::dsp;
 use crate::model::{
-    app_id_from_path, build_sources, device_kind, disambiguate_names, from_percent, mm_device_id, name_from_path, policy_device_id,
-    to_percent, AudioError, Device, Result, SessionInfo, Snapshot, Source,
+    app_id_from_path, build_sources, capture_roots, device_kind, disambiguate_names, from_percent, is_virtual_cable, mm_device_id,
+    name_from_path, policy_device_id, to_percent, AudioError, Device, EqStatus, Result, SessionInfo, Snapshot, Source,
 };
+use crate::routes_file::{RoutesFile, SavedRoute};
+use eq_stream::EqStream;
 use policy::PolicyConfig;
 
 const SYSTEM_SOURCE_ID: &str = "system";
+/// 处理流出错后隔多久再试，免得一直失败时疯狂重启
+const EQ_RETRY: Duration = Duration::from_secs(5);
 
 struct DeviceEntry {
     info: Device,
@@ -43,6 +51,40 @@ struct ProcessInfo {
     name: String,
 }
 
+/// 用来接住开了声音曲线的应用原声的虚拟声卡
+struct Sink {
+    id: String,
+    name: String,
+}
+
+/// 一个开了声音曲线的应用。它在 Windows 里被路由到虚拟声卡，
+/// 用户听到的是处理流送到 target 的版本；音量和开关也由处理流负责。
+struct EqEntry {
+    gains: Vec<f32>,
+    target: String,
+    volume: u8,
+    enabled: bool,
+    streams: Vec<EqStream>,
+    /// 已经转去虚拟声卡的进程
+    routed_pids: HashSet<u32>,
+    error: Option<String>,
+    retry_at: Option<Instant>,
+}
+
+impl EqEntry {
+    fn gain(&self) -> f32 {
+        if self.enabled {
+            from_percent(self.volume)
+        } else {
+            0.0
+        }
+    }
+
+    fn saved(&self) -> SavedRoute {
+        SavedRoute { target: self.target.clone(), volume: self.volume, enabled: self.enabled }
+    }
+}
+
 /// Windows Core Audio 的入口。持有 COM 对象，只能在创建它的线程上使用。
 pub struct AudioSystem {
     enumerator: IMMDeviceEnumerator,
@@ -51,6 +93,11 @@ pub struct AudioSystem {
     sessions: Vec<SessionEntry>,
     sources: Vec<Source>,
     default_device_id: String,
+    /// 每个应用在 Windows 里被单独指定的输出设备
+    persisted: HashMap<String, String>,
+    sink: Option<Sink>,
+    eq: HashMap<String, EqEntry>,
+    routes: RoutesFile,
     processes: HashMap<u32, ProcessInfo>,
     own_pid: u32,
     // 必须最后一个 drop：上面的 COM 对象释放完才能 CoUninitialize
@@ -66,7 +113,8 @@ impl Drop for ComGuard {
 }
 
 impl AudioSystem {
-    pub fn new() -> Result<Self> {
+    /// state_file：记录「为声音曲线临时改过路由的应用」的文件，用来在崩溃后恢复
+    pub fn new(state_file: Option<PathBuf>) -> Result<Self> {
         unsafe { CoInitializeEx(None, COINIT_MULTITHREADED) }.ok().map_err(context("初始化 COM 失败"))?;
         let com = ComGuard;
         let enumerator: IMMDeviceEnumerator =
@@ -79,6 +127,10 @@ impl AudioSystem {
             sessions: Vec::new(),
             sources: Vec::new(),
             default_device_id: String::new(),
+            persisted: HashMap::new(),
+            sink: None,
+            eq: HashMap::new(),
+            routes: RoutesFile::load(state_file),
             processes: HashMap::new(),
             own_pid: unsafe { GetCurrentProcessId() },
             _com: com,
@@ -87,7 +139,7 @@ impl AudioSystem {
         Ok(system)
     }
 
-    /// 重新枚举设备和音频会话
+    /// 重新枚举设备和音频会话，并让声音曲线的处理流跟上变化
     pub fn refresh(&mut self) -> Result<()> {
         let enumerator = &self.enumerator;
         self.default_device_id = unsafe { enumerator.GetDefaultAudioEndpoint(eRender, eMultimedia) }
@@ -103,11 +155,18 @@ impl AudioSystem {
         let mut sessions = Vec::new();
         let mut infos = Vec::new();
         let mut seen_pids = HashSet::new();
+        let mut sink = None;
 
         for i in 0..count {
             let Ok(device) = (unsafe { collection.Item(i) }) else { continue };
             let Some(id) = device_id(&device) else { continue };
             let (info, full_name) = read_device(&device, id.clone());
+            // 虚拟声卡里的会话也要枚举（开了曲线的应用就在那里），但它本身不作为可选的输出设备
+            self.collect_sessions(&device, &id, &mut sessions, &mut infos, &mut seen_pids);
+            if sink.is_none() && is_virtual_cable(&full_name) {
+                sink = Some(Sink { id, name: full_name });
+                continue;
+            }
             let volume = unsafe { device.Activate::<IAudioEndpointVolume>(CLSCTX_ALL, None) }.ok();
             let info = Device {
                 volume: volume
@@ -117,7 +176,6 @@ impl AudioSystem {
                     .unwrap_or(100),
                 ..info
             };
-            self.collect_sessions(&device, &id, &mut sessions, &mut infos, &mut seen_pids);
             devices.push(DeviceEntry { info, volume });
             full_names.push(full_name);
         }
@@ -129,10 +187,21 @@ impl AudioSystem {
         }
 
         let device_ids: Vec<String> = devices.iter().map(|d| d.info.id.clone()).collect();
+        self.persisted = HashMap::new();
+        for info in &infos {
+            if let Some(device) = &info.persisted_device {
+                self.persisted.entry(info.app_id.clone()).or_insert_with(|| device.clone());
+            }
+        }
         self.sources = build_sources(&infos, &device_ids, &self.default_device_id);
         self.devices = devices;
         self.sessions = sessions;
+        self.sink = sink;
         self.processes.retain(|pid, _| seen_pids.contains(pid));
+
+        self.recover_stranded();
+        self.maintain_eq();
+        self.apply_eq_overrides();
         Ok(())
     }
 
@@ -157,6 +226,7 @@ impl AudioSystem {
             let Ok(control2) = control.cast::<IAudioSessionControl2>() else { continue };
             let system = unsafe { control2.IsSystemSoundsSession() } == S_OK;
             let pid = unsafe { control2.GetProcessId() }.unwrap_or(0);
+            // 自己的会话（声音曲线的处理流）不列出来
             if !system && (pid == 0 || pid == self.own_pid) {
                 continue;
             }
@@ -206,18 +276,181 @@ impl AudioSystem {
         info
     }
 
+    fn app_pids(&self, app_id: &str) -> Vec<u32> {
+        let set: BTreeSet<u32> = self.sessions.iter().filter(|s| s.app_id == app_id && s.pid != 0).map(|s| s.pid).collect();
+        set.into_iter().collect()
+    }
+
+    /// 让某个应用回到 target（等于系统默认时就恢复「跟随默认」），并还原它的音量和开关
+    fn release_app(&self, app_id: &str, target: &str, volume: u8, enabled: bool) {
+        let target = if self.devices.iter().any(|d| d.info.id == target) { target } else { &self.default_device_id };
+        let policy_target = (target != self.default_device_id).then(|| policy_device_id(target));
+        if let Some(policy) = &self.policy {
+            for pid in self.app_pids(app_id) {
+                let _ = policy.set(pid, policy_target.as_deref());
+            }
+        }
+        for session in self.sessions.iter().filter(|s| s.app_id == app_id) {
+            unsafe {
+                let _ = session.volume.SetMasterVolume(from_percent(volume), std::ptr::null());
+                let _ = session.volume.SetMute(!enabled, std::ptr::null());
+            }
+        }
+    }
+
+    /// 上次没来得及切回（崩溃、直接关机）而留在虚拟声卡里的应用，按记录送回原设备
+    fn recover_stranded(&mut self) {
+        let Some(sink) = &self.sink else { return };
+        let stranded: Vec<(String, SavedRoute)> = self
+            .sources
+            .iter()
+            .filter(|s| !self.eq.contains_key(&s.id))
+            .filter_map(|s| self.routes.get(&s.id).map(|saved| (s.id.clone(), saved.clone())))
+            .collect();
+        for (app_id, saved) in stranded {
+            if self.persisted.get(&app_id) == Some(&sink.id) {
+                self.release_app(&app_id, &saved.target, saved.volume, saved.enabled);
+                if let Some(source) = self.sources.iter_mut().find(|s| s.id == app_id) {
+                    source.device_id = saved.target.clone();
+                    source.volume = saved.volume;
+                    source.enabled = saved.enabled;
+                }
+            }
+            // 不在虚拟声卡里了（用户在别处改过），记录也就没用了
+            self.routes.remove(&app_id);
+        }
+    }
+
+    /// 让每个开了曲线的应用：都转去虚拟声卡、每个发声进程都有一路处理流
+    fn maintain_eq(&mut self) {
+        let Some(sink) = &self.sink else {
+            // 虚拟声卡没了（被卸载），曲线都没法用了，全部恢复直出
+            let apps: Vec<String> = self.eq.keys().cloned().collect();
+            for app_id in apps {
+                self.disengage(&app_id);
+            }
+            return;
+        };
+        let sink_route = policy_device_id(&sink.id);
+        let needs_parents = self.eq.keys().any(|app| self.app_pids(app).len() > 1);
+        let parents = if needs_parents { process::parent_map() } else { HashMap::new() };
+        let now = Instant::now();
+
+        let Self { eq, sessions, policy, persisted, .. } = self;
+        for (app_id, entry) in eq.iter_mut() {
+            let pids: Vec<u32> = sessions
+                .iter()
+                .filter(|s| &s.app_id == app_id && s.pid != 0)
+                .map(|s| s.pid)
+                .collect::<BTreeSet<_>>()
+                .into_iter()
+                .collect();
+
+            // 用户在 Windows 设置里把它改走了：重新转回虚拟声卡，否则会听到两遍
+            if persisted.get(app_id).is_some_and(|d| *d != sink.id) {
+                entry.routed_pids.clear();
+            }
+            entry.routed_pids.retain(|pid| pids.contains(pid));
+            if let Some(policy) = policy {
+                for &pid in &pids {
+                    if !entry.routed_pids.contains(&pid) && policy.set(pid, Some(&sink_route)).is_ok() {
+                        entry.routed_pids.insert(pid);
+                    }
+                }
+            }
+            // 原声在虚拟声卡里保持满音量，真正的音量在处理流里控制
+            for session in sessions.iter().filter(|s| &s.app_id == app_id) {
+                unsafe {
+                    if session.volume.GetMasterVolume().is_ok_and(|v| v < 0.999) {
+                        let _ = session.volume.SetMasterVolume(1.0, std::ptr::null());
+                    }
+                    if session.volume.GetMute().is_ok_and(|m| m.as_bool()) {
+                        let _ = session.volume.SetMute(false, std::ptr::null());
+                    }
+                }
+            }
+
+            let roots = capture_roots(&pids, |pid| parents.get(&pid).copied());
+            let mut failed = None;
+            entry.streams.retain(|stream| {
+                if stream.is_finished() {
+                    failed = failed.take().or_else(|| stream.error());
+                    return false;
+                }
+                roots.contains(&stream.pid) && stream.device_id == entry.target
+            });
+            if let Some(message) = failed {
+                entry.error = Some(message);
+                entry.retry_at = Some(now + EQ_RETRY);
+            }
+            if entry.retry_at.is_some_and(|at| now < at) {
+                continue;
+            }
+            for &root in &roots {
+                if !entry.streams.iter().any(|s| s.pid == root) {
+                    entry.streams.push(EqStream::start(root, &entry.target, &entry.gains, entry.gain()));
+                }
+            }
+            if !entry.streams.is_empty() && entry.retry_at.is_some() {
+                entry.retry_at = None;
+                entry.error = None;
+            }
+        }
+    }
+
+    /// 开了曲线的应用，界面上显示的是用户选的设备、处理流里的音量
+    fn apply_eq_overrides(&mut self) {
+        for source in &mut self.sources {
+            if let Some(entry) = self.eq.get(&source.id) {
+                source.device_id = entry.target.clone();
+                source.volume = entry.volume;
+                source.enabled = entry.enabled;
+                source.eq_active = entry.streams.iter().any(|s| !s.is_finished());
+                source.eq_error = entry.error.clone();
+            }
+        }
+    }
+
+    fn disengage(&mut self, app_id: &str) {
+        let Some(entry) = self.eq.remove(app_id) else { return };
+        let saved = entry.saved();
+        // 先停处理流（drop 时会等线程退出），再把应用切回去
+        drop(entry);
+        self.release_app(app_id, &saved.target, saved.volume, saved.enabled);
+        self.routes.remove(app_id);
+        if let Some(source) = self.sources.iter_mut().find(|s| s.id == app_id) {
+            source.device_id = saved.target;
+            source.volume = saved.volume;
+            source.enabled = saved.enabled;
+            source.eq_active = false;
+            source.eq_error = None;
+        }
+    }
+
+    /// 退出前调用：所有开了曲线的应用都切回原设备、还原音量
+    pub fn shutdown(&mut self) {
+        let apps: Vec<String> = self.eq.keys().cloned().collect();
+        for app_id in apps {
+            self.disengage(&app_id);
+        }
+    }
+
     pub fn snapshot(&self) -> Snapshot {
         Snapshot {
             sources: self.sources.clone(),
             devices: self.devices.iter().map(|d| d.info.clone()).collect(),
             default_device_id: self.default_device_id.clone(),
+            eq: EqStatus {
+                available: self.sink.is_some() && self.policy.is_some(),
+                sink_name: self.sink.as_ref().map(|s| s.name.clone()),
+            },
         }
     }
 
-    /// 各声音流此刻的峰值电平（0–1），静音的记为 0
+    /// 各声音流此刻的峰值电平（0–1），静音的记为 0；开了曲线的取处理后的电平
     pub fn levels(&self) -> HashMap<String, f32> {
         let mut levels: HashMap<String, f32> = HashMap::new();
-        for s in &self.sessions {
+        for s in self.sessions.iter().filter(|s| !self.eq.contains_key(&s.app_id)) {
             let peak = s.meter.as_ref().and_then(|m| unsafe { m.GetPeakValue() }.ok()).unwrap_or(0.0);
             let level = levels.entry(s.app_id.clone()).or_insert(0.0);
             *level = level.max(peak);
@@ -227,18 +460,31 @@ impl AudioSystem {
                 levels.insert(source.id.clone(), 0.0);
             }
         }
+        for (app_id, entry) in &self.eq {
+            let peak = entry.streams.iter().map(EqStream::level).fold(0.0, f32::max);
+            levels.insert(app_id.clone(), peak);
+        }
         levels
     }
 
     pub fn set_route(&mut self, source_id: &str, device_id: &str) -> Result<()> {
+        if !self.devices.iter().any(|d| d.info.id == device_id) {
+            return Err(AudioError::new("找不到这个输出设备，它可能已经断开"));
+        }
+        // 开了曲线的应用仍留在虚拟声卡里，只是把处理流改送到新设备
+        if let Some(entry) = self.eq.get_mut(source_id) {
+            entry.target = device_id.to_string();
+            let saved = entry.saved();
+            self.routes.set(source_id, saved);
+            self.maintain_eq();
+            self.apply_eq_overrides();
+            return Ok(());
+        }
         let policy = self
             .policy
             .as_ref()
             .ok_or_else(|| AudioError::new("这台电脑的 Windows 版本不支持按应用指定输出设备（需要 Windows 10 1803 或更新）"))?;
-        if !self.devices.iter().any(|d| d.info.id == device_id) {
-            return Err(AudioError::new("找不到这个输出设备，它可能已经断开"));
-        }
-        let pids: BTreeSet<u32> = self.sessions.iter().filter(|s| s.app_id == source_id && s.pid != 0).map(|s| s.pid).collect();
+        let pids = self.app_pids(source_id);
         if pids.is_empty() {
             return Err(AudioError::new("这一路声音不能单独指定输出设备"));
         }
@@ -255,21 +501,92 @@ impl AudioSystem {
     }
 
     pub fn set_source_volume(&mut self, source_id: &str, volume: u8) -> Result<()> {
-        let level = from_percent(volume);
-        self.for_each_session(source_id, |s| unsafe { s.volume.SetMasterVolume(level, std::ptr::null()) })
-            .map_err(context("调整应用音量失败"))?;
+        let volume = volume.min(100);
+        if let Some(entry) = self.eq.get_mut(source_id) {
+            entry.volume = volume;
+            let gain = entry.gain();
+            for stream in &entry.streams {
+                stream.update(&entry.gains, gain);
+            }
+            let saved = entry.saved();
+            self.routes.set(source_id, saved);
+        } else {
+            let level = from_percent(volume);
+            self.for_each_session(source_id, |s| unsafe { s.volume.SetMasterVolume(level, std::ptr::null()) })
+                .map_err(context("调整应用音量失败"))?;
+        }
         if let Some(source) = self.sources.iter_mut().find(|s| s.id == source_id) {
-            source.volume = volume.min(100);
+            source.volume = volume;
         }
         Ok(())
     }
 
     pub fn set_source_enabled(&mut self, source_id: &str, enabled: bool) -> Result<()> {
-        self.for_each_session(source_id, |s| unsafe { s.volume.SetMute(!enabled, std::ptr::null()) })
-            .map_err(context("切换静音失败"))?;
+        if let Some(entry) = self.eq.get_mut(source_id) {
+            entry.enabled = enabled;
+            let gain = entry.gain();
+            for stream in &entry.streams {
+                stream.update(&entry.gains, gain);
+            }
+            let saved = entry.saved();
+            self.routes.set(source_id, saved);
+        } else {
+            self.for_each_session(source_id, |s| unsafe { s.volume.SetMute(!enabled, std::ptr::null()) })
+                .map_err(context("切换静音失败"))?;
+        }
         if let Some(source) = self.sources.iter_mut().find(|s| s.id == source_id) {
             source.enabled = enabled;
         }
+        Ok(())
+    }
+
+    /// 设置某个应用的声音曲线（十段增益，dB）。平直的曲线不做任何处理，应用直接输出。
+    pub fn set_source_eq(&mut self, source_id: &str, gains: &[f32]) -> Result<()> {
+        if gains.len() != dsp::BANDS.len() {
+            return Err(AudioError::new("声音曲线的频段数量不对"));
+        }
+        if dsp::is_flat(gains) {
+            self.disengage(source_id);
+            return Ok(());
+        }
+        if let Some(entry) = self.eq.get_mut(source_id) {
+            entry.gains = gains.to_vec();
+            let gain = entry.gain();
+            for stream in &entry.streams {
+                stream.update(gains, gain);
+            }
+            return Ok(());
+        }
+
+        if self.sink.is_none() {
+            return Err(AudioError::new("没有找到虚拟声卡，声音曲线暂时只能保存。装好 VB-CABLE 后就能生效"));
+        }
+        if self.policy.is_none() {
+            return Err(AudioError::new("这台电脑的 Windows 版本不支持按应用处理声音"));
+        }
+        let source = self
+            .sources
+            .iter()
+            .find(|s| s.id == source_id)
+            .ok_or_else(|| AudioError::new("这个应用已经不在使用声音了"))?;
+        if !source.routable {
+            return Err(AudioError::new("系统声音不能单独加声音曲线"));
+        }
+        let entry = EqEntry {
+            gains: gains.to_vec(),
+            target: source.device_id.clone(),
+            volume: source.volume,
+            enabled: source.enabled,
+            streams: Vec::new(),
+            routed_pids: HashSet::new(),
+            error: None,
+            retry_at: None,
+        };
+        // 先记下原来的去向再改路由，崩溃了也能恢复
+        self.routes.set(source_id, entry.saved());
+        self.eq.insert(source_id.to_string(), entry);
+        self.maintain_eq();
+        self.apply_eq_overrides();
         Ok(())
     }
 
@@ -306,6 +623,12 @@ impl AudioSystem {
     }
 }
 
+impl Drop for AudioSystem {
+    fn drop(&mut self) {
+        self.shutdown();
+    }
+}
+
 /// 在真实的 Windows 上跑一遍关键调用并报告结果（CI 和排查问题用）。
 ///
 /// 重点验证按应用指定设备的未公开接口：对本进程写入一个设备再读回来，
@@ -313,11 +636,17 @@ impl AudioSystem {
 pub fn diagnostics() -> Vec<String> {
     let mut lines = Vec::new();
     let mut probe_device = None;
-    match AudioSystem::new() {
+    match AudioSystem::new(None) {
         Ok(system) => {
             let snapshot = system.snapshot();
             probe_device = snapshot.devices.first().map(|d| d.id.clone());
-            lines.push(format!("audio: ok, {} device(s), {} source(s), default = {:?}", snapshot.devices.len(), snapshot.sources.len(), snapshot.default_device_id));
+            lines.push(format!(
+                "audio: ok, {} device(s), {} source(s), default = {:?}, eq sink = {:?}",
+                snapshot.devices.len(),
+                snapshot.sources.len(),
+                snapshot.default_device_id,
+                snapshot.eq.sink_name
+            ));
             for d in &snapshot.devices {
                 lines.push(format!("  device {:?} ({:?}, {:?}, volume {})", d.name, d.detail, d.kind, d.volume));
             }

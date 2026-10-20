@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createState } from '../state/persist';
+import { createState, readPrefs } from '../state/persist';
 import { reducer } from '../state/reducer';
 import type { AudioEngine } from './AudioEngine';
 import { MockAudioEngine } from './MockAudioEngine';
@@ -10,7 +10,6 @@ function recorder() {
   const engine: AudioEngine = {
     label: 'test',
     native: true,
-    supportsEq: false,
     load: () => new MockAudioEngine().load(),
     onSnapshot: () => () => {},
     onError: () => () => {},
@@ -48,5 +47,22 @@ describe('syncEngine', () => {
     calls.length = 0;
     syncEngine(engine, after, reducer(after, { type: 'select', id: 'chrome' }));
     expect(calls).toEqual([]);
+  });
+
+  it('安装版启动时只下发保存过的曲线，路由和音量一概不动', () => {
+    const { engine, calls } = recorder();
+    // 引擎眼里：全是平直曲线
+    const snapshot = new MockAudioEngine().snapshot();
+    snapshot.sources = snapshot.sources.map((s) => ({ ...s, eq: Array(10).fill(0), eqPreset: 'flat' }));
+    const engineView = createState(snapshot, null, { systemOwned: true });
+    const prefs = readPrefs({
+      sources: {
+        spotify: { eq: [6, 5, 4, 2, 0, 0, 0, 0, 0, 0], eqPreset: 'bass', volume: 3, deviceId: 'monitor' },
+        game: { eq: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], eqPreset: 'flat' },
+      },
+    });
+    const ui = createState(snapshot, prefs, { systemOwned: true });
+    syncEngine(engine, engineView, ui);
+    expect(calls).toEqual(['eq spotify']);
   });
 });

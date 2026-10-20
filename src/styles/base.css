@@ -398,3 +398,12 @@ p {
   background: #8fd6b0;
   box-shadow: 0 0 8px rgba(143, 214, 176, 0.55);
 }
+
+.autostart {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-2);
+}

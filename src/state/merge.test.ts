@@ -50,6 +50,17 @@ describe('mergeSnapshot', () => {
     expect(merged.selectedId).toBe('spotify');
   });
 
+  it('曲线是否可用、是否在处理，都跟着系统走', () => {
+    const next = systemSays((s) => {
+      s.eq = { available: false, sinkName: null };
+      s.sources[0]!.eqActive = true;
+      s.sources[0]!.eqError = '目标设备不可用';
+    });
+    const merged = mergeSnapshot(initial(), next, none, null);
+    expect(merged.eq.available).toBe(false);
+    expect(merged.sources[0]).toMatchObject({ eqActive: true, eqError: '目标设备不可用' });
+  });
+
   it('重新出现的应用接上保存的曲线和位置', () => {
     const state = mergeSnapshot(initial(), systemSays((s) => s.sources.splice(1, 1)), none, null);
     expect(state.sources.map((s) => s.id)).not.toContain('game');

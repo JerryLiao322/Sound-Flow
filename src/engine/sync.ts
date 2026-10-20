@@ -28,7 +28,7 @@ export function syncEngine(
       engine.setSourceVolume(s.id, s.volume);
       onSent(pendingKey.sourceVolume(s.id));
     }
-    if (!p || p.eq !== s.eq) engine.setSourceEq(s.id, s.eq);
+    if (!p || !sameGains(p.eq, s.eq)) engine.setSourceEq(s.id, s.eq);
   }
 
   const prevDevices = new Map(prev?.devices.map((d) => [d.id, d]));
@@ -39,4 +39,9 @@ export function syncEngine(
       onSent(pendingKey.deviceVolume(d.id));
     }
   }
+}
+
+/** 曲线按值比较：恢复保存的设置会生成新数组，内容没变就不必再下发 */
+function sameGains(a: readonly number[], b: readonly number[]): boolean {
+  return a === b || (a.length === b.length && a.every((g, i) => g === b[i]));
 }

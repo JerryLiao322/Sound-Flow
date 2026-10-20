@@ -11,10 +11,12 @@ import { PendingWireLayer, Wires } from './Wires';
 interface Props {
   state: SoundFlowState;
   dispatch: Dispatch<Action>;
+  /** 开机自启是否已开；不知道时为 null */
+  autostart: boolean | null;
 }
 
 /** 输出路由面板：左边应用、中间设备、右边控制单元，应用和设备之间用连线表示路由 */
-export function RoutingBoard({ state, dispatch }: Props) {
+export function RoutingBoard({ state, dispatch, autostart }: Props) {
   const bodyRef = useRef<HTMLDivElement>(null);
   const { ports, registerPort, track } = usePortLayout(bodyRef);
   const { pending, portHandlers } = useConnectDrag(
@@ -83,7 +85,13 @@ export function RoutingBoard({ state, dispatch }: Props) {
         </div>
 
         <div className="col col--inspector">
-          <Inspector source={selected} device={selectedDevice} dispatch={dispatch} />
+          <Inspector
+            source={selected}
+            device={selectedDevice}
+            eqStatus={state.eq}
+            autostart={autostart}
+            dispatch={dispatch}
+          />
         </div>
 
         {pending && <PendingWireLayer pending={pending} ports={ports} />}

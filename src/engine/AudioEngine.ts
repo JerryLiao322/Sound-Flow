@@ -1,10 +1,11 @@
-import type { AudioSource, OutputDevice } from '../model/types';
+import type { AudioSource, EqStatus, OutputDevice } from '../model/types';
 
 export interface EngineSnapshot {
   sources: AudioSource[];
   devices: OutputDevice[];
   /** 系统默认输出设备：重置路由、或保存的设备已不存在时回落到这里 */
   defaultDeviceId: string;
+  eq: EqStatus;
 }
 
 /** 各声音流此刻的电平，0–1，按 source id 索引 */
@@ -25,8 +26,6 @@ export interface AudioEngine {
    * 启动时不会用保存的值覆盖系统，系统那边的变化会通过 onSnapshot 推过来。
    */
   readonly native: boolean;
-  /** 声音曲线是否真的作用到声音上 */
-  readonly supportsEq: boolean;
   load(): Promise<EngineSnapshot>;
   /** 系统里的应用、设备、音量发生变化时推送新快照 */
   onSnapshot(listener: (snapshot: EngineSnapshot) => void): () => void;

@@ -20,7 +20,8 @@
         "minHeight": 560,
         "center": true,
         "theme": "Dark",
-        "backgroundColor": "#060a09"
+        "backgroundColor": "#060a09",
+        "visible": false
       }
     ],
     "security": {
@@ -29,8 +30,16 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["nsis"],
-    "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.icns", "icons/icon.ico"],
+    "targets": [
+      "nsis"
+    ],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
     "publisher": "Sound Flow",
     "copyright": "© 2026 Sound Flow",
     "category": "Utility",
@@ -41,7 +50,10 @@
         "type": "embedBootstrapper"
       },
       "nsis": {
-        "languages": ["SimpChinese", "English"],
+        "languages": [
+          "SimpChinese",
+          "English"
+        ],
         "displayLanguageSelector": false,
         "installMode": "currentUser"
       }

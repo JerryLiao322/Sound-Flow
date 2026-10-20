@@ -1,22 +1,25 @@
 import type { Dispatch } from 'react';
 import { useEngine } from '../engine/EngineContext';
 import { EQ_PRESETS, presetLabel } from '../model/eq';
-import type { AudioSource, OutputDevice } from '../model/types';
+import type { AudioSource, EqStatus, OutputDevice } from '../model/types';
 import type { Action } from '../state/reducer';
 import { cx } from '../lib/cx';
 import { EqEditor } from './EqEditor';
+import { EqStatusNote } from './EqStatusNote';
 import { LevelBar } from './Meters';
 import { VolumeSlider } from './VolumeSlider';
 
 interface Props {
   source: AudioSource;
   device: OutputDevice | undefined;
+  eqStatus: EqStatus;
+  autostart: boolean | null;
   dispatch: Dispatch<Action>;
 }
 
 /** 右列「控制单元」：当前选中这一路的音量、声音曲线，以及它所连设备的主音量 */
-export function Inspector({ source, device, dispatch }: Props) {
-  const { supportsEq } = useEngine();
+export function Inspector({ source, device, eqStatus, autostart, dispatch }: Props) {
+  const { native } = useEngine();
   return (
     <section className="inspector" aria-labelledby="inspector-title">
       <div className="eyebrow">控制单元</div>
@@ -81,7 +84,7 @@ export function Inspector({ source, device, dispatch }: Props) {
               <span className="control-value">{presetLabel(source.eqPreset)}</span>
             </div>
             <EqEditor gains={source.eq} onChange={(band, gain) => dispatch({ type: 'eqBand', id: source.id, band, gain })} />
-            {!supportsEq && <p className="control-note">当前版本只保存曲线，还不会改变实际听到的声音。</p>}
+            <EqStatusNote native={native} status={eqStatus} source={source} autostart={autostart} />
             <div className="preset-row" role="group" aria-label="曲线预设">
               {EQ_PRESETS.map((p) => (
                 <button

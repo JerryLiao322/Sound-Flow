@@ -148,7 +148,7 @@ export function createState(snapshot: EngineSnapshot, prefs: StoredPrefs | null,
   const selectedId =
     prefs?.selectedId && sources.some((s) => s.id === prefs.selectedId) ? prefs.selectedId : (sources[0]?.id ?? '');
 
-  return { sources, devices, selectedId, defaultDeviceId: snapshot.defaultDeviceId };
+  return { sources, devices, selectedId, defaultDeviceId: snapshot.defaultDeviceId, eq: snapshot.eq };
 }
 
 export function loadPrefs(): StoredPrefs | null {

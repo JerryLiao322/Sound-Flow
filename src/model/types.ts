@@ -20,6 +20,10 @@ export interface AudioSource {
   deviceId: string;
   /** 能否单独指定输出设备（系统声音只能跟随默认设备） */
   routable: boolean;
+  /** 声音曲线正在实际处理这一路（只有原生引擎会报告） */
+  eqActive?: boolean;
+  /** 声音曲线处理出错时的说明 */
+  eqError?: string | null;
   /** 每个频段的增益（dB），与 EQ_BANDS 一一对应 */
   eq: number[];
   eqPreset: EqPresetId;
@@ -34,6 +38,13 @@ export interface OutputDevice {
   detail: string;
   /** 设备主音量 0–100 */
   volume: number;
+}
+
+/** 声音曲线能不能真正作用到声音上 */
+export interface EqStatus {
+  available: boolean;
+  /** 用来接住原声的虚拟声卡名称 */
+  sinkName: string | null;
 }
 
 export interface Point {

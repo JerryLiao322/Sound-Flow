@@ -1,11 +1,13 @@
 //! 从进程 ID 找到可执行文件，并读出给人看的程序名
 
+use std::collections::HashMap;
 use std::ffi::c_void;
 use std::ptr::null_mut;
 
 use windows::core::{w, HSTRING, PWSTR};
 use windows::Win32::Foundation::CloseHandle;
 use windows::Win32::Storage::FileSystem::{GetFileVersionInfoSizeW, GetFileVersionInfoW, VerQueryValueW};
+use windows::Win32::System::Diagnostics::ToolHelp::{CreateToolhelp32Snapshot, Process32FirstW, Process32NextW, PROCESSENTRY32W, TH32CS_SNAPPROCESS};
 use windows::Win32::System::Threading::{OpenProcess, QueryFullProcessImageNameW, PROCESS_NAME_WIN32, PROCESS_QUERY_LIMITED_INFORMATION};
 
 pub fn image_path(pid: u32) -> Option<String> {
@@ -57,4 +59,23 @@ pub fn file_description(path: &str) -> Option<String> {
         }
         None
     }
+}
+
+/// 当前所有进程的「进程号 → 父进程号」
+pub fn parent_map() -> HashMap<u32, u32> {
+    let mut parents = HashMap::new();
+    unsafe {
+        let Ok(snapshot) = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0) else { return parents };
+        let mut entry = PROCESSENTRY32W { dwSize: std::mem::size_of::<PROCESSENTRY32W>() as u32, ..Default::default() };
+        if Process32FirstW(snapshot, &mut entry).is_ok() {
+            loop {
+                parents.insert(entry.th32ProcessID, entry.th32ParentProcessID);
+                if Process32NextW(snapshot, &mut entry).is_err() {
+                    break;
+                }
+            }
+        }
+        let _ = CloseHandle(snapshot);
+    }
+    parents
 }

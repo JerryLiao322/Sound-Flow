@@ -1,6 +1,6 @@
 import type { EngineSnapshot } from '../engine/AudioEngine';
 import { EQ_BANDS, clampGain, clampVolume, findPreset, flatGains, type BuiltinPresetId } from '../model/eq';
-import type { AudioSource, OutputDevice } from '../model/types';
+import type { AudioSource, EqStatus, OutputDevice } from '../model/types';
 import { mergeSnapshot, type PendingKeys } from './merge';
 import type { StoredPrefs } from './persist';
 
@@ -10,6 +10,7 @@ export interface SoundFlowState {
   /** 当前在控制单元里编辑的声音流 */
   selectedId: string;
   defaultDeviceId: string;
+  eq: EqStatus;
 }
 
 export type Action =

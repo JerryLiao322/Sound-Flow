@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::path::PathBuf;
 
 use crate::model::{AudioError, Result, Snapshot};
 
@@ -6,7 +7,7 @@ use crate::model::{AudioError, Result, Snapshot};
 pub struct AudioSystem;
 
 impl AudioSystem {
-    pub fn new() -> Result<Self> {
+    pub fn new(_state_file: Option<PathBuf>) -> Result<Self> {
         Err(AudioError::new("Sound Flow 目前只支持 Windows 10/11"))
     }
 
@@ -37,6 +38,12 @@ impl AudioSystem {
     pub fn set_device_volume(&mut self, _device_id: &str, _volume: u8) -> Result<()> {
         Err(unsupported())
     }
+
+    pub fn set_source_eq(&mut self, _source_id: &str, _gains: &[f32]) -> Result<()> {
+        Err(unsupported())
+    }
+
+    pub fn shutdown(&mut self) {}
 }
 
 fn unsupported() -> AudioError {

@@ -3,10 +3,12 @@ import { RoutingBoard } from './components/RoutingBoard';
 import { LogoMark } from './components/Icons';
 import { Toasts } from './components/Toasts';
 import type { AudioEngine, EngineSnapshot } from './engine/AudioEngine';
+import { useAutostart } from './engine/desktop';
 import { EngineContext } from './engine/EngineContext';
 import { MockAudioEngine } from './engine/MockAudioEngine';
 import { TauriAudioEngine, isTauri } from './engine/TauriAudioEngine';
 import { useSoundFlow } from './state/useSoundFlow';
+import { Toggle } from './components/Toggle';
 
 type Boot = { status: 'loading' } | { status: 'ready'; snapshot: EngineSnapshot } | { status: 'error'; message: string };
 
@@ -68,21 +70,29 @@ export function App() {
 
 function Workspace({ engine, snapshot }: { engine: AudioEngine; snapshot: EngineSnapshot }) {
   const [state, dispatch] = useSoundFlow(engine, snapshot);
+  const autostart = useAutostart();
   const live = state.sources.filter((s) => s.enabled);
   const devicesInUse = new Set(live.map((s) => s.deviceId)).size;
 
   return (
     <>
-      <TopBar engine={engine} flows={live.length} devices={devicesInUse} />
+      <TopBar engine={engine} flows={live.length} devices={devicesInUse} autostart={autostart} />
       <main>
-        <RoutingBoard state={state} dispatch={dispatch} />
+        <RoutingBoard state={state} dispatch={dispatch} autostart={autostart.enabled} />
       </main>
       <Toasts />
     </>
   );
 }
 
-function TopBar({ engine, flows, devices }: { engine: AudioEngine; flows?: number; devices?: number }) {
+interface TopBarProps {
+  engine: AudioEngine;
+  flows?: number;
+  devices?: number;
+  autostart?: ReturnType<typeof useAutostart>;
+}
+
+function TopBar({ engine, flows, devices, autostart }: TopBarProps) {
   return (
     <header className="topbar">
       <div className="brand">
@@ -101,6 +111,17 @@ function TopBar({ engine, flows, devices }: { engine: AudioEngine; flows?: numbe
         {devices !== undefined && (
           <span className="stat">
             <b>{devices}</b> 个设备在用
+          </span>
+        )}
+        {autostart && autostart.enabled !== null && (
+          <span className="autostart" title="开机后在托盘里静默运行，开了声音曲线的应用才会一直有声音">
+            开机启动
+            <Toggle
+              checked={autostart.enabled}
+              label={autostart.enabled ? '开' : '关'}
+              ariaLabel="开机自动启动 Sound Flow"
+              onChange={autostart.setEnabled}
+            />
           </span>
         )}
         <span

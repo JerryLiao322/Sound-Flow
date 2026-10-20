@@ -1,7 +1,7 @@
 {
   "name": "sound-flow",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "声音流管理：把每个应用的声音路由到指定的输出设备，并分别调节音量与声音曲线",
   "type": "module",
   "scripts": {
@@ -16,6 +16,8 @@
   },
   "dependencies": {
     "@tauri-apps/api": "^2.12.4",
+    "@tauri-apps/plugin-autostart": "^2.7.0",
+    "@tauri-apps/plugin-opener": "^2.7.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },

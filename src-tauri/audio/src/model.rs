@@ -48,6 +48,20 @@ pub struct Source {
     pub device_id: String,
     /// 系统声音只能跟随默认设备，不能单独路由
     pub routable: bool,
+    /// 声音曲线正在处理这一路
+    pub eq_active: bool,
+    /// 声音曲线处理出错时的说明
+    pub eq_error: Option<String>,
+}
+
+/// 声音曲线能不能真正生效
+#[derive(Debug, Clone, PartialEq, Default, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct EqStatus {
+    /// 找到了可以接住原声的虚拟声卡
+    pub available: bool,
+    /// 那块虚拟声卡的名字，如 CABLE Input (VB-Audio Virtual Cable)
+    pub sink_name: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Default, Serialize)]
@@ -56,6 +70,7 @@ pub struct Snapshot {
     pub sources: Vec<Source>,
     pub devices: Vec<Device>,
     pub default_device_id: String,
+    pub eq: EqStatus,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -130,6 +145,8 @@ pub(crate) fn build_sources(sessions: &[SessionInfo], device_ids: &[String], def
                 volume: to_percent(lead.volume),
                 device_id,
                 routable: !first.system,
+                eq_active: false,
+                eq_error: None,
             }
         })
         .collect()
@@ -186,6 +203,41 @@ pub(crate) fn name_from_path(path: &str) -> String {
         Some(c) => c.to_uppercase().chain(chars).collect(),
         None => String::new(),
     }
+}
+
+/// 能当声音曲线「静音接收端」的虚拟声卡（如 VB-CABLE 的 CABLE Input）：
+/// 声音送进去没人听，适合在那里把应用的原声接住。Voicemeeter 的输入会继续往外送，不算。
+pub(crate) fn is_virtual_cable(full_name: &str) -> bool {
+    let lower = full_name.to_lowercase();
+    lower.contains("cable") && (lower.contains("vb-audio") || lower.contains("virtual cable") || lower.contains("virtual audio cable"))
+}
+
+/// 从一组发声的进程里挑出要抓取的「根」：抓一个进程会连同它的子进程一起抓，
+/// 所以祖先也在列表里的进程要跳过，否则同一份声音会被处理两遍。
+pub(crate) fn capture_roots(pids: &[u32], parent_of: impl Fn(u32) -> Option<u32>) -> Vec<u32> {
+    let mut roots: Vec<u32> = pids
+        .iter()
+        .copied()
+        .filter(|&pid| {
+            let mut current = pid;
+            // 进程号会被复用，父子关系可能成环，限定步数
+            for _ in 0..64 {
+                match parent_of(current) {
+                    Some(parent) if parent != current && parent != 0 => {
+                        if pids.contains(&parent) {
+                            return false;
+                        }
+                        current = parent;
+                    }
+                    _ => break,
+                }
+            }
+            true
+        })
+        .collect();
+    roots.sort_unstable();
+    roots.dedup();
+    roots
 }
 
 /// 名字重复的设备（同一块声卡的扬声器和耳机口）改用完整名称区分
@@ -297,6 +349,31 @@ mod tests {
         assert_eq!(device_kind(None, "Harman Kardon"), DeviceKind::Speaker);
         assert_eq!(app_id_from_path(r"C:\Users\me\AppData\Roaming\Spotify\Spotify.exe"), "spotify.exe");
         assert_eq!(name_from_path(r"C:\Games\valorant.exe"), "Valorant");
+    }
+
+    #[test]
+    fn recognises_virtual_cables_but_not_voicemeeter() {
+        assert!(is_virtual_cable("CABLE Input (VB-Audio Virtual Cable)"));
+        assert!(is_virtual_cable("Hi-Fi Cable Input (VB-Audio Hi-Fi Cable)"));
+        assert!(is_virtual_cable("Line 1 (Virtual Audio Cable)"));
+        assert!(!is_virtual_cable("Voicemeeter Input (VB-Audio Voicemeeter VAIO)"));
+        assert!(!is_virtual_cable("扬声器 (Realtek(R) Audio)"));
+    }
+
+    #[test]
+    fn capture_roots_skip_descendants_of_other_targets() {
+        // 1 ← 2 ← 3（3 的父进程是 2，2 的父进程是 1），5 独立
+        let parent = |pid: u32| match pid {
+            2 => Some(1),
+            3 => Some(2),
+            5 => Some(4),
+            _ => None,
+        };
+        assert_eq!(capture_roots(&[3, 1, 5], parent), vec![1, 5]);
+        assert_eq!(capture_roots(&[3, 5], parent), vec![3, 5]);
+        // 成环也不会卡死
+        let looped = |pid: u32| Some(if pid == 7 { 8 } else { 7 });
+        assert_eq!(capture_roots(&[9], looped), vec![9]);
     }
 
     #[test]

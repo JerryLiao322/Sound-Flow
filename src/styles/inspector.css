@@ -203,3 +203,30 @@
   font-size: 11px;
   color: var(--text-3);
 }
+
+.control-note.is-ok {
+  color: #8fd6b0;
+}
+
+.control-note.is-error {
+  color: var(--danger-text);
+}
+
+.eq-setup {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px dashed rgba(240, 214, 150, 0.35);
+  background: rgba(240, 214, 150, 0.05);
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text-2);
+}
+
+.eq-setup strong {
+  color: var(--gold-hi);
+}
+
+.eq-setup .notice-action {
+  margin-top: 8px;
+}
