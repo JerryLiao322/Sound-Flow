@@ -34,6 +34,7 @@ jobs:
         # 2022 (build 20348) 和 2025 (build 26100) 分别走按应用路由接口的两个版本
         os: [windows-2022, windows-2025]
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
     defaults:
       run:
         working-directory: src-tauri
@@ -48,6 +49,8 @@ jobs:
         run: cargo test -p soundflow-audio
       # 让诊断能对真实设备做「写入 → 读回」；装不上也不影响后面的检查
       - name: 准备音频服务和虚拟声卡
+        timeout-minutes: 5
+        continue-on-error: true
         shell: pwsh
         run: ../.github/scripts/setup-audio.ps1
       - name: 在真实 Windows 上跑一遍 Core Audio 调用
@@ -64,6 +67,7 @@ jobs:
   windows-installer:
     name: Windows 安装包
     runs-on: windows-latest
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -87,6 +91,7 @@ jobs:
     name: 安装冒烟测试
     needs: windows-installer
     runs-on: windows-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
@@ -94,9 +99,12 @@ jobs:
           name: sound-flow-windows-installer
           path: installer
       - name: 准备音频服务和虚拟声卡
+        timeout-minutes: 5
+        continue-on-error: true
         shell: pwsh
         run: ./.github/scripts/setup-audio.ps1
       - name: 静默安装、启动、检查窗口、卸载
+        timeout-minutes: 8
         shell: pwsh
         run: ./.github/scripts/smoke-test.ps1 -InstallerDir installer
       - uses: actions/upload-artifact@v4

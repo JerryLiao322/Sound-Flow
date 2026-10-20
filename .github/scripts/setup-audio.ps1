@@ -23,16 +23,23 @@ try {
     }
     $inf = Get-ChildItem $sys.DirectoryName -Filter *.inf | Select-Object -First 1
 
-    # 驱动是自签名的：先信任它的发布者证书，安装时才不会弹确认
+    # 驱动是自签名的：同时信任为根证书和受信任的发布者，否则安装时会弹出看不见的确认框，一直卡住
     $cert = (Get-AuthenticodeSignature $sys.FullName).SignerCertificate
-    $store = [System.Security.Cryptography.X509Certificates.X509Store]::new('TrustedPublisher', 'LocalMachine')
-    $store.Open('ReadWrite')
-    $store.Add($cert)
-    $store.Close()
+    foreach ($storeName in 'Root', 'TrustedPublisher') {
+        $store = [System.Security.Cryptography.X509Certificates.X509Store]::new($storeName, 'LocalMachine')
+        $store.Open('ReadWrite')
+        $store.Add($cert)
+        $store.Close()
+    }
 
     $devcon = Get-ChildItem -Recurse $work -Filter 'devcon*.exe' | Where-Object Name -match 'x64' | Select-Object -First 1
     if (-not $devcon) { throw '压缩包里没找到 devcon' }
-    & $devcon.FullName install $inf.FullName '*Scream'
+    $install = Start-Process $devcon.FullName -ArgumentList @('install', "`"$($inf.FullName)`"", '*Scream') -NoNewWindow -PassThru
+    if (-not $install.WaitForExit(120000)) {
+        $install.Kill()
+        throw 'devcon 两分钟没装完（多半在等驱动签名确认），放弃安装虚拟声卡'
+    }
+    Write-Host "devcon exit code: $($install.ExitCode)"
     Start-Sleep -Seconds 5
 } catch {
     Write-Warning "安装虚拟声卡失败：$_"
