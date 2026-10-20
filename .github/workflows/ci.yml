@@ -6,9 +6,10 @@ on:
   pull_request:
   workflow_dispatch:
 
+# 同一分支同时只跑一组；新推送排在后面，不打断正在打包的那次
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   web:
@@ -45,6 +46,26 @@ jobs:
           key: audio
       - name: 单元测试
         run: cargo test -p soundflow-audio
+      # 运行器默认没开音频服务、也没有声卡：开服务，再装一块虚拟声卡（Scream），
+      # 让诊断能对真实设备做「写入 → 读回」。装不上也不影响后面的检查。
+      - name: 准备音频服务和虚拟声卡
+        continue-on-error: true
+        shell: pwsh
+        working-directory: ${{ runner.temp }}
+        run: |
+          Set-Service -Name Audiosrv -StartupType Automatic
+          Start-Service -Name Audiosrv
+          Invoke-WebRequest https://github.com/duncanthrax/scream/releases/download/4.0/Scream4.0.zip -OutFile scream.zip
+          Expand-Archive scream.zip -DestinationPath scream -Force
+          $sys = Get-ChildItem -Recurse scream -Filter Scream.sys | Where-Object FullName -match 'x64' | Select-Object -First 1
+          $inf = Get-ChildItem $sys.DirectoryName -Filter *.inf | Select-Object -First 1
+          $cert = (Get-AuthenticodeSignature $sys.FullName).SignerCertificate
+          $store = [System.Security.Cryptography.X509Certificates.X509Store]::new('TrustedPublisher', 'LocalMachine')
+          $store.Open('ReadWrite'); $store.Add($cert); $store.Close()
+          $devcon = Get-ChildItem -Recurse scream -Filter 'devcon*.exe' | Where-Object Name -match 'x64' | Select-Object -First 1
+          & $devcon.FullName install $inf.FullName '*Scream'
+          Start-Sleep -Seconds 5
+          Get-CimInstance Win32_SoundDevice | Format-Table Name, Status -AutoSize | Out-String | Write-Host
       - name: 在真实 Windows 上跑一遍 Core Audio 调用
         shell: pwsh
         run: |
