@@ -46,26 +46,10 @@ jobs:
           key: audio
       - name: 单元测试
         run: cargo test -p soundflow-audio
-      # 运行器默认没开音频服务、也没有声卡：开服务，再装一块虚拟声卡（Scream），
-      # 让诊断能对真实设备做「写入 → 读回」。装不上也不影响后面的检查。
+      # 让诊断能对真实设备做「写入 → 读回」；装不上也不影响后面的检查
       - name: 准备音频服务和虚拟声卡
-        continue-on-error: true
         shell: pwsh
-        working-directory: ${{ runner.temp }}
-        run: |
-          Set-Service -Name Audiosrv -StartupType Automatic
-          Start-Service -Name Audiosrv
-          Invoke-WebRequest https://github.com/duncanthrax/scream/releases/download/4.0/Scream4.0.zip -OutFile scream.zip
-          Expand-Archive scream.zip -DestinationPath scream -Force
-          $sys = Get-ChildItem -Recurse scream -Filter Scream.sys | Where-Object FullName -match 'x64' | Select-Object -First 1
-          $inf = Get-ChildItem $sys.DirectoryName -Filter *.inf | Select-Object -First 1
-          $cert = (Get-AuthenticodeSignature $sys.FullName).SignerCertificate
-          $store = [System.Security.Cryptography.X509Certificates.X509Store]::new('TrustedPublisher', 'LocalMachine')
-          $store.Open('ReadWrite'); $store.Add($cert); $store.Close()
-          $devcon = Get-ChildItem -Recurse scream -Filter 'devcon*.exe' | Where-Object Name -match 'x64' | Select-Object -First 1
-          & $devcon.FullName install $inf.FullName '*Scream'
-          Start-Sleep -Seconds 5
-          Get-CimInstance Win32_SoundDevice | Format-Table Name, Status -AutoSize | Out-String | Write-Host
+        run: ../.github/scripts/setup-audio.ps1
       - name: 在真实 Windows 上跑一遍 Core Audio 调用
         shell: pwsh
         run: |
@@ -98,3 +82,26 @@ jobs:
           name: sound-flow-windows-installer
           path: src-tauri/target/release/bundle/nsis/*.exe
           if-no-files-found: error
+
+  install-smoke:
+    name: 安装冒烟测试
+    needs: windows-installer
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: sound-flow-windows-installer
+          path: installer
+      - name: 准备音频服务和虚拟声卡
+        shell: pwsh
+        run: ./.github/scripts/setup-audio.ps1
+      - name: 静默安装、启动、检查窗口、卸载
+        shell: pwsh
+        run: ./.github/scripts/smoke-test.ps1 -InstallerDir installer
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: smoke-test-screenshot
+          path: ${{ runner.temp }}/sound-flow.png
+          if-no-files-found: ignore
