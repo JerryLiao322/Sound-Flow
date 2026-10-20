@@ -1,0 +1,199 @@
+/* ---------- 控制单元 ---------- */
+
+.inspector {
+  padding: 14px 16px 16px;
+}
+
+.inspector .eyebrow {
+  margin-bottom: 12px;
+}
+
+.inspector-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.inspector-col {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.control {
+  padding: 12px 12px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, 0.14);
+}
+
+.control-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.control-label {
+  font-size: 12.5px;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.control-hint {
+  margin-left: 4px;
+  font-weight: 600;
+  color: var(--text-3);
+}
+
+.control-value {
+  flex: none;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--gold-hi);
+  font-variant-numeric: tabular-nums;
+}
+
+.notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1px dashed rgba(255, 255, 255, 0.18);
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+.notice-action {
+  flex: none;
+  height: 26px;
+  padding: 0 12px;
+  border-radius: 13px;
+  border: 1px solid rgba(240, 214, 150, 0.55);
+  background: rgba(240, 214, 150, 0.1);
+  color: var(--gold-hi);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* 分段电平条：遮罩切出小格，宽度跟着 --level 走 */
+.level-bar {
+  position: relative;
+  flex: none;
+  width: 62px;
+  height: 8px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.1);
+  -webkit-mask: repeating-linear-gradient(90deg, #000 0 4px, transparent 4px 6px);
+  mask: repeating-linear-gradient(90deg, #000 0 4px, transparent 4px 6px);
+}
+
+.level-bar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform-origin: left;
+  transform: scaleX(var(--level, 0));
+  background: linear-gradient(90deg, #8fd6b0, #f0d48a 70%, #ef8a6c);
+  transition: transform 60ms linear;
+}
+
+/* ---------- 声音曲线 ---------- */
+
+.eq svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  touch-action: none;
+  user-select: none;
+  cursor: ns-resize;
+  overflow: visible;
+}
+
+.eq-grid line {
+  stroke: rgba(255, 255, 255, 0.06);
+}
+
+.eq-grid line.eq-zero {
+  stroke: rgba(255, 255, 255, 0.18);
+  stroke-dasharray: 3 4;
+}
+
+.eq-grid line.is-hot {
+  stroke: rgba(240, 214, 150, 0.3);
+}
+
+.eq-label {
+  fill: var(--text-3);
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.eq-label.is-hot {
+  fill: var(--gold-hi);
+}
+
+.eq-curve {
+  fill: none;
+  stroke: var(--gold-hi);
+  stroke-width: 2;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 6px var(--gold-glow));
+}
+
+.eq-node {
+  outline: none;
+}
+
+.eq-node-ring {
+  fill: transparent;
+  stroke: transparent;
+  stroke-width: 1.5;
+}
+
+.eq-node-dot {
+  fill: #121816;
+  stroke: var(--gold);
+  stroke-width: 1.6;
+  transition: fill 0.12s;
+}
+
+.eq-node.is-hot .eq-node-dot {
+  fill: var(--gold-hi);
+}
+
+.eq-node:focus-visible .eq-node-ring {
+  stroke: var(--gold-hi);
+}
+
+.eq-tip {
+  fill: var(--gold-hi);
+  font-size: 10px;
+  font-weight: 800;
+  paint-order: stroke;
+  stroke: #0c1312;
+  stroke-width: 3px;
+}
+
+.preset-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+/* 控制单元单独占一行时，左右分栏摆放 */
+@media (max-width: 1180px) and (min-width: 761px) {
+  .inspector-body {
+    display: grid;
+    grid-template-columns: minmax(240px, 1fr) minmax(320px, 1.45fr);
+    align-items: start;
+    gap: 16px;
+  }
+}

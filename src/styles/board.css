@@ -1,0 +1,550 @@
+/* ---------- 路由面板（参考图里的玻璃弹窗） ---------- */
+
+.board {
+  position: relative;
+  border-radius: var(--radius-panel);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background:
+    radial-gradient(80% 120% at 88% 0%, rgba(40, 96, 82, 0.42), transparent 62%),
+    radial-gradient(70% 90% at 0% 100%, rgba(18, 48, 42, 0.55), transparent 70%),
+    linear-gradient(180deg, #0f1c1a, #0a1211);
+  box-shadow:
+    0 40px 90px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  padding: 26px 34px 34px;
+}
+
+.board--empty {
+  color: var(--text-2);
+  text-align: center;
+  padding: 80px 24px;
+}
+
+.board-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 26px;
+}
+
+.board-title {
+  margin-top: 6px;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+}
+
+.board-sub {
+  margin-top: 4px;
+  font-size: 12.5px;
+  color: var(--text-3);
+}
+
+.hint-narrow {
+  display: none;
+}
+
+.board-hint {
+  margin-top: 14px;
+  padding-left: 4px;
+  font-size: 11.5px;
+  color: var(--text-3);
+}
+
+/* 四列：应用 | 连线区 | 设备 | 控制单元 */
+.board-body {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(300px, 340px) minmax(96px, 1fr) minmax(224px, 256px) minmax(320px, 372px);
+  grid-template-areas: 'sources gap devices inspector';
+  align-items: start;
+  /* 拖线、拖排序时别顺带选中文字 */
+  user-select: none;
+}
+
+.col {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+}
+
+.col--sources {
+  grid-area: sources;
+}
+
+/* 只是一条装饰线；不能挡住伸进这一列的应用端口 */
+.col--gap {
+  grid-area: gap;
+  align-self: stretch;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* 参考图里左列右侧那条竖向分隔线 */
+.col--gap::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 30px;
+  width: 1px;
+  background: linear-gradient(180deg, transparent, var(--line) 12%, var(--line) 88%, transparent);
+}
+
+.col--devices {
+  grid-area: devices;
+  margin-top: 22px;
+}
+
+.col--inspector {
+  grid-area: inspector;
+  margin-left: 24px;
+}
+
+/* ---------- 应用卡片 ---------- */
+
+.source-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.source-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 58px;
+  padding: 0 22px 0 8px;
+  border-radius: var(--radius-card);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.035);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.source-card:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.source-card.is-selected {
+  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* 选中卡片左缘的亮条 */
+.source-card.is-selected::before {
+  content: '';
+  position: absolute;
+  left: -1px;
+  top: 50%;
+  width: 2px;
+  height: 28px;
+  margin-top: -14px;
+  border-radius: 2px;
+  background: #f4f1ea;
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+}
+
+.source-card.is-off .tile,
+.source-card.is-off .source-name {
+  opacity: 0.5;
+}
+
+.source-list.is-reordering .source-card {
+  transition: transform 0.16s ease;
+}
+
+.source-list.is-reordering .source-card.is-lifted {
+  z-index: 3;
+  transition: none;
+  background: #222b29;
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.5);
+}
+
+.drag-handle {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 40px;
+  padding: 0;
+  border-radius: 7px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-3);
+  cursor: grab;
+  touch-action: none;
+}
+
+.drag-handle:hover {
+  color: var(--text-2);
+}
+
+.is-lifted .drag-handle {
+  cursor: grabbing;
+}
+
+.source-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.source-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.source-name {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+/* 宽屏靠连线表达去向，窄屏没有连线时才显示 */
+.source-route {
+  display: none;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 11px;
+  color: var(--text-3);
+}
+
+.live-badge {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 20px;
+  padding: 0 7px;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #f8e2a3, #d6aa55);
+  color: var(--gold-ink);
+  font-size: 11px;
+  font-weight: 800;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    0 0 12px rgba(227, 189, 107, 0.18);
+}
+
+.live-bars {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 1.5px;
+  height: 10px;
+}
+
+.live-bars i {
+  width: 2px;
+  height: 10px;
+  border-radius: 1px;
+  background: currentColor;
+  transform-origin: bottom;
+  transform: scaleY(var(--b1, 0.25));
+  transition: transform 60ms linear;
+}
+
+.live-bars i:nth-child(2) {
+  transform: scaleY(var(--b2, 0.25));
+}
+
+.live-bars i:nth-child(3) {
+  transform: scaleY(var(--b3, 0.25));
+}
+
+/* ---------- 设备分组卡片 ---------- */
+
+.device-group,
+.inspector {
+  position: relative;
+  border-radius: var(--radius-group);
+  border: 1px solid var(--line-2);
+  background: rgba(255, 255, 255, 0.03);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  padding: 16px 14px 14px;
+}
+
+.group-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.group-titles {
+  flex: 1;
+  min-width: 0;
+}
+
+.group-title {
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.group-sub {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 11px;
+  color: var(--text-2);
+}
+
+.group-sub strong {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.device-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.device-row {
+  position: relative;
+  width: 100%;
+  min-height: 46px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--line-2);
+  background: var(--surface-1);
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+}
+
+.device-row:hover {
+  border-color: var(--line-3);
+  background: var(--surface-2);
+}
+
+.device-row.is-target {
+  border-color: rgba(255, 255, 255, 0.3);
+  background: var(--surface-3);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.device-row.is-drop {
+  border-color: rgba(240, 214, 150, 0.7);
+  background: rgba(240, 214, 150, 0.08);
+  box-shadow: 0 0 0 3px rgba(240, 214, 150, 0.12);
+}
+
+/* 端口压在分组卡片的左边框外侧一点 */
+.port--in {
+  left: -30px;
+}
+
+.device-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.device-name {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 13.5px;
+  font-weight: 800;
+}
+
+.device-detail {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 11px;
+  color: var(--text-3);
+}
+
+.device-count {
+  flex: none;
+  display: grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--text-2);
+}
+
+/* ---------- 连线 ---------- */
+
+.wire-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.wire-layer--pending {
+  z-index: 5;
+}
+
+.wire-base {
+  fill: none;
+  stroke: var(--wire);
+  stroke-width: 1.6;
+  stroke-opacity: 0.22;
+  stroke-linecap: round;
+  transition: stroke-opacity 0.2s;
+}
+
+.wire.is-selected .wire-base {
+  stroke-width: 2.2;
+  stroke-opacity: 0.9;
+  filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.35));
+}
+
+/* 光点沿线从应用流向设备 */
+.wire-flow {
+  fill: none;
+  stroke: #ffffff;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-dasharray: 0.1 16;
+  stroke-opacity: 0.35;
+  animation: wire-flow 1.1s linear infinite;
+}
+
+.wire.is-selected .wire-flow {
+  stroke: var(--gold-hi);
+  stroke-width: 3.6;
+  stroke-opacity: 1;
+  filter: drop-shadow(0 0 4px var(--gold-glow));
+}
+
+@keyframes wire-flow {
+  to {
+    stroke-dashoffset: -16.1;
+  }
+}
+
+.wire.is-detaching .wire-base {
+  stroke-opacity: 0.14;
+  stroke-dasharray: 4 6;
+  filter: none;
+}
+
+.wire.is-detaching .wire-flow {
+  display: none;
+}
+
+.wire.is-pending .wire-base {
+  stroke-width: 2;
+  stroke-opacity: 0.85;
+  stroke-dasharray: 5 6;
+}
+
+.wire.is-pending.is-snapped .wire-base {
+  stroke: var(--gold-hi);
+  stroke-opacity: 1;
+  stroke-dasharray: none;
+  filter: drop-shadow(0 0 5px var(--gold-glow));
+}
+
+.wire-tip {
+  fill: var(--port-core);
+  stroke: var(--wire);
+  stroke-width: 1.5;
+}
+
+/* ---------- 响应式 ---------- */
+
+/* 中等宽度：控制单元换到下一行 */
+@media (max-width: 1180px) {
+  .board-body {
+    grid-template-columns: minmax(290px, 340px) minmax(80px, 1fr) minmax(224px, 270px);
+    grid-template-areas:
+      'sources gap devices'
+      'inspector inspector inspector';
+    row-gap: 28px;
+  }
+
+  .col--inspector {
+    margin-left: 0;
+  }
+}
+
+/* 窄屏：单列堆叠，不画连线，卡片上直接写去向；点设备行即可改路由 */
+@media (max-width: 760px) {
+  .board {
+    padding: 20px 16px 20px;
+    border-radius: 22px;
+  }
+
+  .board-head {
+    flex-direction: column;
+    margin-bottom: 18px;
+  }
+
+  .board-title {
+    font-size: 20px;
+  }
+
+  .board-body {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: 'sources' 'devices' 'inspector';
+    row-gap: 18px;
+  }
+
+  .col--gap,
+  .wire-layer,
+  .port,
+  .board-hint,
+  .hint-wide {
+    display: none;
+  }
+
+  .hint-narrow {
+    display: inline;
+  }
+
+  .col--devices {
+    margin-top: 0;
+  }
+
+  .source-card {
+    padding-right: 10px;
+  }
+
+  .source-route {
+    display: block;
+  }
+}
+
+@media (max-width: 420px) {
+  .live-text {
+    display: none;
+  }
+}
