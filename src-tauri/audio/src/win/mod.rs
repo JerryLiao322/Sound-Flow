@@ -242,9 +242,10 @@ impl AudioSystem {
         if pids.is_empty() {
             return Err(AudioError::new("这一路声音不能单独指定输出设备"));
         }
-        let target = policy_device_id(device_id);
+        // 连到系统默认设备 = 清除单独指定，让它以后跟着系统默认走
+        let target = (device_id != self.default_device_id).then(|| policy_device_id(device_id));
         for pid in pids {
-            policy.set(pid, Some(&target)).map_err(context("切换输出设备失败"))?;
+            policy.set(pid, target.as_deref()).map_err(context("切换输出设备失败"))?;
         }
         // 先记下用户的选择，下一次刷新再以系统状态为准
         if let Some(source) = self.sources.iter_mut().find(|s| s.id == source_id) {
