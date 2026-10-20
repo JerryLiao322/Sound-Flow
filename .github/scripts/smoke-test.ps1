@@ -41,32 +41,27 @@ $player = Start-Process powershell.exe -PassThru -WindowStyle Hidden -ArgumentLi
 )
 Start-Sleep -Seconds 3
 
-# 打开 WebView2 的调试端口，下面直接读页面里渲染出来的文字
-$env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS = '--remote-debugging-port=9222'
 $app = Start-Process $exe.FullName -PassThru
 Start-Sleep -Seconds 15
 if ($app.HasExited) { throw "Sound Flow 启动后退出了，退出码 $($app.ExitCode)" }
 Write-Host "app is running (pid $($app.Id))"
 
-function Invoke-PageScript([string] $expression) {
-    $page = Invoke-RestMethod http://127.0.0.1:9222/json/list | Where-Object type -eq 'page' | Select-Object -First 1
-    if (-not $page) { throw '没找到 Sound Flow 的页面（WebView2 调试端口里没有 page）' }
-    $ws = [System.Net.WebSockets.ClientWebSocket]::new()
-    $ws.ConnectAsync([Uri] $page.webSocketDebuggerUrl, [Threading.CancellationToken]::None).Wait()
-    $request = @{ id = 1; method = 'Runtime.evaluate'; params = @{ expression = $expression; returnByValue = $true } } | ConvertTo-Json -Depth 5 -Compress
-    $bytes = [Text.Encoding]::UTF8.GetBytes($request)
-    $ws.SendAsync([ArraySegment[byte]]::new($bytes), 'Text', $true, [Threading.CancellationToken]::None).Wait()
-    $buffer = [byte[]]::new(1MB)
-    $message = [IO.MemoryStream]::new()
-    do {
-        $part = $ws.ReceiveAsync([ArraySegment[byte]]::new($buffer), [Threading.CancellationToken]::None).GetAwaiter().GetResult()
-        $message.Write($buffer, 0, $part.Count)
-    } until ($part.EndOfMessage)
-    $ws.Dispose()
-    ([Text.Encoding]::UTF8.GetString($message.ToArray()) | ConvertFrom-Json).result.result.value
+# 通过 UI 自动化读出页面里渲染出来的文字。
+# Chromium 要等第一次被无障碍客户端查询后才开始构建网页的无障碍树，所以隔几秒多问几次。
+Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes
+$A = [System.Windows.Automation.AutomationElement]
+$byPid = New-Object System.Windows.Automation.PropertyCondition($A::ProcessIdProperty, $app.Id)
+$window = $A::RootElement.FindFirst([System.Windows.Automation.TreeScope]::Children, $byPid)
+if (-not $window) { throw '没找到 Sound Flow 的窗口' }
+Write-Host "window title: $($window.Current.Name)"
+$text = ''
+for ($attempt = 1; $attempt -le 8; $attempt++) {
+    $names = $window.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.Condition]::TrueCondition) |
+        ForEach-Object { $_.Current.Name } | Where-Object { $_ } | Select-Object -Unique
+    $text = $names -join "`n"
+    if ($text -match '声音流管理') { break }
+    Start-Sleep -Seconds 2
 }
-
-$text = Invoke-PageScript 'document.body.innerText'
 Write-Host '----- 页面文字 -----'
 $text -split "`n" | Where-Object { $_.Trim() } | ForEach-Object { Write-Host "  $_" }
 Write-Host '--------------------'
