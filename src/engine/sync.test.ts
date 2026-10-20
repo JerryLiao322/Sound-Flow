@@ -9,7 +9,11 @@ function recorder() {
   const calls: string[] = [];
   const engine: AudioEngine = {
     label: 'test',
-    snapshot: () => new MockAudioEngine().snapshot(),
+    native: true,
+    supportsEq: false,
+    load: () => new MockAudioEngine().load(),
+    onSnapshot: () => () => {},
+    onError: () => () => {},
     setRoute: (id, deviceId) => calls.push(`route ${id} ${deviceId}`),
     setSourceEnabled: (id, on) => calls.push(`enabled ${id} ${on}`),
     setSourceVolume: (id, v) => calls.push(`volume ${id} ${v}`),
@@ -20,20 +24,26 @@ function recorder() {
   return { engine, calls };
 }
 
+const initial = () => createState(new MockAudioEngine().snapshot(), null, { systemOwned: false });
+
 describe('syncEngine', () => {
-  it('首次同步下发全部设置', () => {
+  it('首次同步下发全部设置，但不给不能路由的声音流发路由', () => {
     const { engine, calls } = recorder();
-    const s = createState(engine.snapshot(), null);
+    const s = initial();
     syncEngine(engine, null, s);
-    expect(calls).toHaveLength(s.sources.length * 4 + s.devices.length);
+    const routable = s.sources.filter((x) => x.routable).length;
+    expect(calls).toHaveLength(routable + s.sources.length * 3 + s.devices.length);
+    expect(calls).not.toContain('route system hk');
   });
 
-  it('之后只下发改变了的字段', () => {
+  it('之后只下发改变了的字段，并报告哪些字段在等系统确认', () => {
     const { engine, calls } = recorder();
-    const before = createState(engine.snapshot(), null);
+    const before = initial();
     const after = reducer(before, { type: 'route', sourceId: 'game', deviceId: 'hk' });
-    syncEngine(engine, before, after);
+    const sent: string[] = [];
+    syncEngine(engine, before, after, (key) => sent.push(key));
     expect(calls).toEqual(['route game hk']);
+    expect(sent).toEqual(['src:game:device']);
 
     calls.length = 0;
     syncEngine(engine, after, reducer(after, { type: 'select', id: 'chrome' }));

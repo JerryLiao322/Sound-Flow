@@ -197,3 +197,9 @@
     gap: 16px;
   }
 }
+
+.control-note {
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--text-3);
+}

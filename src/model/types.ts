@@ -1,4 +1,4 @@
-export type SourceKind = 'music' | 'game' | 'voice' | 'browser' | 'system';
+export type SourceKind = 'app' | 'music' | 'game' | 'voice' | 'browser' | 'system';
 export type DeviceKind = 'speaker' | 'headphones' | 'monitor' | 'virtual';
 
 export type EqPresetId = 'flat' | 'bass' | 'vocal' | 'footsteps' | 'night' | 'custom';
@@ -18,6 +18,8 @@ export interface AudioSource {
   volume: number;
   /** 输出到哪个设备 */
   deviceId: string;
+  /** 能否单独指定输出设备（系统声音只能跟随默认设备） */
+  routable: boolean;
   /** 每个频段的增益（dB），与 EQ_BANDS 一一对应 */
   eq: number[];
   eqPreset: EqPresetId;

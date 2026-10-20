@@ -98,10 +98,11 @@ export function SourceList(props: Props) {
                 s.enabled && 'is-linked',
                 selected && s.enabled && 'is-hot',
                 connectingId === s.id && 'is-hot',
+                !s.routable && 'is-locked',
               )}
               ref={registerPort(`src:${s.id}`)}
-              title={`拖动连线，把 ${s.name} 输出到某个设备`}
-              {...portHandlers(s.id)}
+              title={s.routable ? `拖动连线，把 ${s.name} 输出到某个设备` : `${s.name}始终跟随系统默认输出设备`}
+              {...(s.routable ? portHandlers(s.id) : {})}
             />
           </li>
         );

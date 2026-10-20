@@ -1,0 +1,30 @@
+[workspace]
+members = [".", "audio"]
+resolver = "2"
+
+[package]
+name = "sound-flow"
+version = "0.1.0"
+description = "声音流管理：把每个应用的声音路由到指定的输出设备"
+edition = "2021"
+
+[lib]
+name = "sound_flow_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-single-instance = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+soundflow-audio = { path = "audio" }
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+panic = "abort"
+strip = true

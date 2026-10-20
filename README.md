@@ -1,19 +1,39 @@
 # Sound Flow · 声音流管理
 
 把每个应用的声音分别送到不同的输出设备：Spotify 走 Harman Kardon 音响，游戏和语音走耳机，
-每一路都能单独调音量和声音曲线（十段均衡）。
+每一路都能单独调音量。
 
-界面是连线式的路由面板：左边是应用，中间是本机的输出设备，两者之间的线就是声音的去向；
-右边的「控制单元」调当前选中这一路的音量、曲线，以及它所连设备的主音量。
+界面是连线式的路由面板：左边是正在用声音的应用，中间是本机的输出设备，两者之间的线就是声音的去向；
+右边的「控制单元」调当前选中这一路的音量、声音曲线，以及它所连设备的主音量。
 
-## 运行
+## 下载安装（Windows）
 
-```bash
-npm install
-npm run dev        # 开发服务器
-npm run build      # 类型检查 + 打包到 dist/
-npm test           # 单元测试
-```
+到 [Releases](https://github.com/JerryLiao322/Sound-Flow/releases/latest) 下载 `Sound.Flow_<版本>_x64-setup.exe`，双击安装。
+
+- 支持 Windows 10 1803 及以上、Windows 11（64 位）
+- 不需要管理员权限，装在当前用户下，开始菜单和桌面会有快捷方式
+- 安装包暂时没有数字签名，Windows 可能提示「Windows 已保护你的电脑」：点 **更多信息 → 仍要运行**
+
+## 能做什么
+
+| 功能 | 状态 |
+| --- | --- |
+| 自动列出正在用声音的应用（按程序归并）和所有输出设备，插拔设备、开关应用实时更新 | ✅ |
+| 把某个应用的声音切到指定设备 | ✅ 由 Windows 记住，关掉 Sound Flow 也一直有效 |
+| 每个应用的音量、静音；每个设备的主音量 | ✅ 和 Windows 混音器双向同步 |
+| 实时电平 | ✅ |
+| 声音曲线（十段均衡） | ⏳ 现在只保存，不改变实际声音（见下文） |
+
+几点说明：
+
+- 连到标着「默认」的设备，等于让这个应用**跟随系统默认输出**；以后在 Windows 里换默认设备，它会跟着换。
+- 系统声音只能跟随默认设备，不能单独路由。
+- 大多数应用（浏览器、Spotify、Discord、多数游戏）会立刻切过去；少数自己选定了设备的程序要重开一次才生效。
+
+### 关于声音曲线
+
+Windows 没有「按应用加均衡」的系统接口。要真正做到，需要把应用的声音先截下来、处理后再送到目标设备，
+通常还要借助一块虚拟声卡来接住原始声音，这一版还没有实现。现在曲线会按应用保存，界面上也有提示。
 
 ## 操作
 
@@ -24,31 +44,45 @@ npm test           # 单元测试
 | 静音 / 恢复某一路 | 卡片上的「输出」开关 |
 | 调整卡片顺序 | 按住 ☰ 上下拖；或让 ☰ 获得焦点后按 ↑ ↓ |
 | 调声音曲线 | 在曲线图上按住任意位置上下拖（会抓住最近的频段）；节点聚焦后可用 ↑ ↓ / PageUp PageDown；也可以直接点预设 |
-| 全部恢复默认 | 「重置路由」点两次：所有应用回到默认设备、曲线恢复平直，音量不变 |
+| 全部恢复默认 | 「重置路由」点两次：所有应用改回跟随默认设备、曲线恢复平直，音量不变 |
 
-设置会记在本地（localStorage），刷新后保留。
+## 开发
+
+需要 Node.js 22 和 Rust（stable）。
+
+```bash
+npm install
+npm run dev          # 只开界面（浏览器里，用模拟数据），任何系统都行
+npm test             # 前端单元测试
+npm run app:dev      # 桌面版开发模式（Windows）
+npm run app:build    # 打安装包（Windows），产物在 src-tauri/target/release/bundle/nsis/
+
+cd src-tauri
+cargo test -p soundflow-audio                       # 音频库单元测试
+cargo run -p soundflow-audio --example diagnose     # 在这台 Windows 上检查音频后端是否正常
+```
+
+### 发布新版本
+
+1. 改 `package.json` 里的 `version`
+2. 在 GitHub 的 Actions 页运行 **Release**（或推送 `v<版本>` 标签）
+
+工作流会在 Windows 上打包，并把安装包发布到 Releases。每次推送也会跑 CI，安装包可以在对应运行的 Artifacts 里下载试用。
 
 ## 结构
 
 ```
-src/
-  engine/       音频引擎抽象 AudioEngine、模拟实现 MockAudioEngine、状态→引擎的增量同步
-  state/        reducer（唯一的状态来源）、偏好的保存与校验
-  model/        类型、均衡频段与预设
-  geometry/     连线贝塞尔曲线、均衡曲线的坐标换算
-  hooks/        端口坐标测量、拖线连接、拖动排序、实时电平订阅
-  components/   路由面板、应用卡片、设备分组、连线层、控制单元、曲线编辑器
-  styles/       设计变量与各区域样式
+src/                    界面（React + TypeScript）
+  engine/               音频引擎抽象；MockAudioEngine（浏览器）/ TauriAudioEngine（安装版）；状态→引擎增量同步
+  state/                reducer、系统快照合并、本地设置的保存与校验
+  model/ geometry/      类型、均衡预设、缩写；连线与曲线的几何计算
+  hooks/ components/    端口测量、拖线、排序、电平；各个界面组件
+src-tauri/              桌面外壳（Tauri 2）
+  src/worker.rs         音频线程：处理界面指令，定时推送电平和系统变化
+  audio/                Windows Core Audio 封装（soundflow-audio）
+    src/win/policy.rs   按应用指定输出设备（未公开的 AudioPolicyConfig 接口）
+.github/workflows/      CI 与发布
 ```
 
-## 现状与下一步
-
-现在跑的是**模拟引擎**：应用列表、电平都是假的，所有改动只在界面里生效，不会动系统音频。
-界面只通过 `src/engine/AudioEngine.ts` 这层接口下发指令，换成真实引擎时界面不用改。
-
-接入 Windows 的一个可行方案：
-
-- 用 Tauri（Rust）或 Electron 原生模块做后端；
-- 通过 Core Audio 枚举音频会话和输出设备，`ISimpleAudioVolume` / `IAudioEndpointVolume` 控制应用与设备音量；
-- 按应用指定输出设备需要用到系统「应用音量和设备首选项」背后的 `IAudioPolicyConfig` 接口（未公开文档，EarTrumpet 等工具在用）；
-- 按应用的均衡需要在信号链里插入处理：例如每一路先送进虚拟声卡、处理后再送到目标设备，或者在设备级别用 APO（如 Equalizer APO）。
+安装版里路由、音量、静音**以 Windows 为准**：打开 Sound Flow 不会用上次保存的值去覆盖系统，
+只会恢复卡片顺序、选中项和声音曲线。

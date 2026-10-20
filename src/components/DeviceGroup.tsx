@@ -5,6 +5,7 @@ interface Props {
   devices: OutputDevice[];
   sources: AudioSource[];
   selected: AudioSource;
+  defaultDeviceId: string;
   /** 拖线时指针正悬停的设备 */
   dropTargetId: string | null;
   onPick: (deviceId: string) => void;
@@ -15,7 +16,7 @@ interface Props {
  * 中列：本机的输出设备，对应参考图右侧的分组卡片。
  * 每一行左边缘有一个输入端口；点一下某行 = 把当前选中的应用接到这台设备。
  */
-export function DeviceGroup({ devices, sources, selected, dropTargetId, onPick, registerPort }: Props) {
+export function DeviceGroup({ devices, sources, selected, defaultDeviceId, dropTargetId, onPick, registerPort }: Props) {
   const linked = new Map<string, number>();
   for (const s of sources) {
     if (s.enabled) linked.set(s.deviceId, (linked.get(s.deviceId) ?? 0) + 1);
@@ -31,7 +32,9 @@ export function DeviceGroup({ devices, sources, selected, dropTargetId, onPick, 
             本机输出
           </h2>
           <p className="group-sub">
-            {devices.length} 个设备 · {flows} 路声音流正在输出
+            {selected.routable
+              ? `${devices.length} 个设备 · ${flows} 路声音流正在输出`
+              : `${selected.name}跟随系统默认设备，不能单独切换`}
           </p>
         </div>
       </header>
@@ -44,11 +47,18 @@ export function DeviceGroup({ devices, sources, selected, dropTargetId, onPick, 
             <li key={d.id}>
               <button
                 type="button"
-                className={cx('device-row', isTarget && 'is-target', dropTargetId === d.id && 'is-drop')}
+                className={cx(
+                  'device-row',
+                  isTarget && 'is-target',
+                  dropTargetId === d.id && 'is-drop',
+                  !selected.routable && 'is-locked',
+                )}
                 data-device-id={d.id}
                 aria-pressed={isTarget}
+                aria-disabled={!selected.routable}
                 aria-label={`把 ${selected.name} 输出到 ${d.name}`}
-                onClick={() => onPick(d.id)}
+                title={d.id === defaultDeviceId ? '系统默认输出设备：连到这里就是跟随系统默认' : undefined}
+                onClick={() => selected.routable && onPick(d.id)}
               >
                 <span
                   className={cx('port port--in', count > 0 && 'is-linked', isTarget && 'is-hot')}
@@ -57,7 +67,10 @@ export function DeviceGroup({ devices, sources, selected, dropTargetId, onPick, 
                 />
                 <span className="tile tile--sm">{d.code}</span>
                 <span className="device-text">
-                  <span className="device-name">{d.name}</span>
+                  <span className="device-name-row">
+                    <span className="device-name">{d.name}</span>
+                    {d.id === defaultDeviceId && <span className="default-tag">默认</span>}
+                  </span>
                   <span className="device-detail">{d.detail}</span>
                 </span>
                 {count > 0 && (

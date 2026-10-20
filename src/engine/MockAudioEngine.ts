@@ -12,11 +12,11 @@ const MOCK_DEVICES: OutputDevice[] = [
 ];
 
 const MOCK_SOURCES: AudioSource[] = [
-  { id: 'spotify', name: 'Spotify', code: 'SP', kind: 'music', active: true, enabled: true, volume: 72, deviceId: 'hk', eq: gains('bass'), eqPreset: 'bass' },
-  { id: 'game', name: '游戏', code: 'GM', kind: 'game', active: true, enabled: true, volume: 85, deviceId: 'headset', eq: gains('footsteps'), eqPreset: 'footsteps' },
-  { id: 'discord', name: 'Discord', code: 'DC', kind: 'voice', active: true, enabled: true, volume: 60, deviceId: 'headset', eq: gains('vocal'), eqPreset: 'vocal' },
-  { id: 'chrome', name: 'Chrome', code: 'CR', kind: 'browser', active: false, enabled: true, volume: 50, deviceId: 'hk', eq: gains('flat'), eqPreset: 'flat' },
-  { id: 'system', name: '系统声音', code: 'SY', kind: 'system', active: false, enabled: false, volume: 35, deviceId: 'monitor', eq: gains('flat'), eqPreset: 'flat' },
+  { id: 'spotify', name: 'Spotify', code: 'SP', kind: 'music', active: true, enabled: true, volume: 72, deviceId: 'hk', routable: true, eq: gains('bass'), eqPreset: 'bass' },
+  { id: 'game', name: '游戏', code: 'GM', kind: 'game', active: true, enabled: true, volume: 85, deviceId: 'headset', routable: true, eq: gains('footsteps'), eqPreset: 'footsteps' },
+  { id: 'discord', name: 'Discord', code: 'DC', kind: 'voice', active: true, enabled: true, volume: 60, deviceId: 'headset', routable: true, eq: gains('vocal'), eqPreset: 'vocal' },
+  { id: 'chrome', name: 'Chrome', code: 'CR', kind: 'browser', active: false, enabled: true, volume: 50, deviceId: 'hk', routable: true, eq: gains('flat'), eqPreset: 'flat' },
+  { id: 'system', name: '系统声音', code: 'SY', kind: 'system', active: false, enabled: false, volume: 35, deviceId: 'hk', routable: false, eq: gains('flat'), eqPreset: 'flat' },
 ];
 
 /**
@@ -25,6 +25,8 @@ const MOCK_SOURCES: AudioSource[] = [
  */
 export class MockAudioEngine implements AudioEngine {
   readonly label = '模拟引擎';
+  readonly native = false;
+  readonly supportsEq = true;
 
   private sources = structuredClone(MOCK_SOURCES);
   private devices = structuredClone(MOCK_DEVICES);
@@ -37,6 +39,19 @@ export class MockAudioEngine implements AudioEngine {
       devices: structuredClone(this.devices),
       defaultDeviceId: 'hk',
     };
+  }
+
+  load(): Promise<EngineSnapshot> {
+    return Promise.resolve(this.snapshot());
+  }
+
+  onSnapshot(): () => void {
+    // 模拟数据不会自己变化
+    return () => {};
+  }
+
+  onError(): () => void {
+    return () => {};
   }
 
   setRoute(sourceId: string, deviceId: string): void {

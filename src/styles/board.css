@@ -548,3 +548,84 @@
     display: none;
   }
 }
+
+/* ---------- 不能单独路由的声音流（系统声音） ---------- */
+
+.port--out.is-locked {
+  cursor: not-allowed;
+  border-style: dashed;
+}
+
+.port--out.is-locked:hover {
+  transform: none;
+}
+
+.device-row.is-locked {
+  cursor: not-allowed;
+}
+
+.device-row.is-locked:hover {
+  border-color: var(--line-2);
+  background: var(--surface-1);
+}
+
+.device-name-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.default-tag {
+  flex: none;
+  height: 16px;
+  padding: 0 5px;
+  border-radius: 4px;
+  border: 1px solid rgba(240, 214, 150, 0.45);
+  color: var(--gold-hi);
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 14px;
+}
+
+/* ---------- 启动 / 出错 ---------- */
+
+.boot-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.boot-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+/* ---------- 底部提示 ---------- */
+
+.toasts {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: min(520px, calc(100vw - 32px));
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.toast {
+  padding: 10px 16px;
+  border-radius: 10px;
+  border: 1px solid var(--danger-line);
+  background: rgba(40, 14, 18, 0.94);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+  color: var(--danger-text);
+  font-size: 13px;
+  font-weight: 600;
+}

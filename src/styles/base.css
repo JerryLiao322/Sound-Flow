@@ -393,3 +393,8 @@ p {
     gap: 10px 14px;
   }
 }
+
+.engine-chip.is-native i {
+  background: #8fd6b0;
+  box-shadow: 0 0 8px rgba(143, 214, 176, 0.55);
+}

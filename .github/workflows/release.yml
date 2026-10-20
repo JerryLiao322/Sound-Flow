@@ -1,0 +1,52 @@
+name: Release
+
+# 手动运行，或推送 v* 标签：打出 Windows 安装包并发布到 GitHub Releases。
+# 版本号取自 package.json；同一版本重复运行会更新同一个 Release 的附件。
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: 发布 Windows 安装包
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - run: npm ci
+      - run: npm test
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: v__VERSION__
+          releaseName: Sound Flow v__VERSION__
+          releaseBody: |
+            ## 下载安装
+
+            下载下面的 **`Sound.Flow_<版本>_x64-setup.exe`**，双击安装即可（Windows 10 1803 或更新、Windows 11，64 位）。
+            不需要管理员权限，会装到当前用户下，并在开始菜单和桌面放上快捷方式。
+
+            安装包暂时没有数字签名，Windows 可能会弹出「Windows 已保护你的电脑」：点 **更多信息 → 仍要运行**。
+
+            ## 这一版能做什么
+
+            - 自动列出正在用声音的应用和所有输出设备
+            - 拖线（或点设备）把某个应用的声音切到指定设备，设置由 Windows 记住，关掉 Sound Flow 也有效
+            - 分别调节每个应用的音量、每个设备的主音量，单独静音某个应用
+            - 实时电平显示；在 Windows 混音器里改了音量，这里会同步
+
+            声音曲线（均衡）这一版只保存、还不改变实际声音，后续版本补上。
+          releaseDraft: false
+          prerelease: false

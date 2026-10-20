@@ -25,7 +25,11 @@ export function RoutingBoard({ state, dispatch }: Props) {
 
   const selected = state.sources.find((s) => s.id === state.selectedId) ?? state.sources[0];
   if (!selected) {
-    return <section className="board board--empty">还没有检测到任何正在使用音频的应用。</section>;
+    return (
+      <section className="board board--empty">
+        <p>还没有应用在使用声音。打开音乐、游戏或视频后，它们会自动出现在这里。</p>
+      </section>
+    );
   }
   const selectedDevice = state.devices.find((d) => d.id === selected.deviceId);
 
@@ -71,6 +75,7 @@ export function RoutingBoard({ state, dispatch }: Props) {
             devices={state.devices}
             sources={state.sources}
             selected={selected}
+            defaultDeviceId={state.defaultDeviceId}
             dropTargetId={pending?.overDeviceId ?? null}
             onPick={(deviceId) => dispatch({ type: 'route', sourceId: selected.id, deviceId })}
             registerPort={registerPort}

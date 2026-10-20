@@ -4,19 +4,21 @@ import { EQ_RANGE } from '../model/eq';
 import { createState } from './persist';
 import { reducer, type SoundFlowState } from './reducer';
 
-const initial = (): SoundFlowState => createState(new MockAudioEngine().snapshot(), null);
+const initial = (): SoundFlowState => createState(new MockAudioEngine().snapshot(), null, { systemOwned: false });
 const source = (s: SoundFlowState, id: string) => s.sources.find((x) => x.id === id)!;
 
 describe('reducer', () => {
   it('route 改设备、打开输出并选中这一路', () => {
-    const s = reducer(initial(), { type: 'route', sourceId: 'system', deviceId: 'headset' });
-    expect(source(s, 'system')).toMatchObject({ deviceId: 'headset', enabled: true });
-    expect(s.selectedId).toBe('system');
+    let s = reducer(initial(), { type: 'toggle', id: 'chrome' });
+    s = reducer(s, { type: 'route', sourceId: 'chrome', deviceId: 'headset' });
+    expect(source(s, 'chrome')).toMatchObject({ deviceId: 'headset', enabled: true });
+    expect(s.selectedId).toBe('chrome');
   });
 
-  it('route 到不存在的设备时什么都不做', () => {
+  it('route 到不存在的设备、或路由系统声音时什么都不做', () => {
     const before = initial();
     expect(reducer(before, { type: 'route', sourceId: 'spotify', deviceId: 'nope' })).toBe(before);
+    expect(reducer(before, { type: 'route', sourceId: 'system', deviceId: 'headset' })).toBe(before);
   });
 
   it('toggle 翻转输出开关', () => {

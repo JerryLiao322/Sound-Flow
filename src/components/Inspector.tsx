@@ -1,4 +1,5 @@
 import type { Dispatch } from 'react';
+import { useEngine } from '../engine/EngineContext';
 import { EQ_PRESETS, presetLabel } from '../model/eq';
 import type { AudioSource, OutputDevice } from '../model/types';
 import type { Action } from '../state/reducer';
@@ -15,6 +16,7 @@ interface Props {
 
 /** 右列「控制单元」：当前选中这一路的音量、声音曲线，以及它所连设备的主音量 */
 export function Inspector({ source, device, dispatch }: Props) {
+  const { supportsEq } = useEngine();
   return (
     <section className="inspector" aria-labelledby="inspector-title">
       <div className="eyebrow">控制单元</div>
@@ -29,6 +31,7 @@ export function Inspector({ source, device, dispatch }: Props) {
             {source.enabled ? (
               <>
                 输出至 <strong>{device?.name ?? '未知设备'}</strong>
+                {!source.routable && ' · 跟随系统默认'}
               </>
             ) : (
               '输出已关闭'
@@ -78,6 +81,7 @@ export function Inspector({ source, device, dispatch }: Props) {
               <span className="control-value">{presetLabel(source.eqPreset)}</span>
             </div>
             <EqEditor gains={source.eq} onChange={(band, gain) => dispatch({ type: 'eqBand', id: source.id, band, gain })} />
+            {!supportsEq && <p className="control-note">当前版本只保存曲线，还不会改变实际听到的声音。</p>}
             <div className="preset-row" role="group" aria-label="曲线预设">
               {EQ_PRESETS.map((p) => (
                 <button

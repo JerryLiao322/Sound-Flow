@@ -1,5 +1,8 @@
+import type { EngineSnapshot } from '../engine/AudioEngine';
 import { EQ_BANDS, clampGain, clampVolume, findPreset, flatGains, type BuiltinPresetId } from '../model/eq';
 import type { AudioSource, OutputDevice } from '../model/types';
+import { mergeSnapshot, type PendingKeys } from './merge';
+import type { StoredPrefs } from './persist';
 
 export interface SoundFlowState {
   sources: AudioSource[];
@@ -18,7 +21,9 @@ export type Action =
   | { type: 'eqBand'; id: string; band: number; gain: number }
   | { type: 'eqPreset'; id: string; preset: BuiltinPresetId }
   | { type: 'reorder'; from: number; to: number }
-  | { type: 'resetRoutes' };
+  | { type: 'resetRoutes' }
+  /** 系统那边有变化（应用开关、设备插拔、在别处调了音量） */
+  | { type: 'engineSnapshot'; snapshot: EngineSnapshot; pending: PendingKeys; prefs: StoredPrefs | null };
 
 export function reducer(state: SoundFlowState, action: Action): SoundFlowState {
   switch (action.type) {
@@ -30,7 +35,8 @@ export function reducer(state: SoundFlowState, action: Action): SoundFlowState {
       return patchSource(state, action.id, (s) => ({ enabled: !s.enabled }));
 
     case 'route': {
-      if (!state.devices.some((d) => d.id === action.deviceId) || !hasSource(state, action.sourceId)) return state;
+      const source = state.sources.find((s) => s.id === action.sourceId);
+      if (!source?.routable || !state.devices.some((d) => d.id === action.deviceId)) return state;
       // 连上线就意味着要听到它：顺便打开输出，并切到这一路
       const next = patchSource(state, action.sourceId, () => ({ deviceId: action.deviceId, enabled: true }));
       return { ...next, selectedId: action.sourceId };
@@ -74,12 +80,15 @@ export function reducer(state: SoundFlowState, action: Action): SoundFlowState {
         ...state,
         sources: state.sources.map((s) => ({
           ...s,
-          deviceId: state.defaultDeviceId,
+          deviceId: s.routable ? state.defaultDeviceId : s.deviceId,
           enabled: true,
           eq: flatGains(),
           eqPreset: 'flat',
         })),
       };
+
+    case 'engineSnapshot':
+      return mergeSnapshot(state, action.snapshot, action.pending, action.prefs);
   }
 }
 
