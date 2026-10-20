@@ -41,43 +41,50 @@ $player = Start-Process powershell.exe -PassThru -WindowStyle Hidden -ArgumentLi
 )
 Start-Sleep -Seconds 3
 
+# 打开 WebView2 的调试端口，下面直接读页面里渲染出来的文字
+$env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS = '--remote-debugging-port=9222'
 $app = Start-Process $exe.FullName -PassThru
 Start-Sleep -Seconds 15
 if ($app.HasExited) { throw "Sound Flow 启动后退出了，退出码 $($app.ExitCode)" }
 Write-Host "app is running (pid $($app.Id))"
 
-# 通过 UI 自动化读出窗口里的文字（WebView2 会把网页内容暴露成无障碍树）
-Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes
-$A = [System.Windows.Automation.AutomationElement]
-$byPid = New-Object System.Windows.Automation.PropertyCondition($A::ProcessIdProperty, $app.Id)
-$window = $A::RootElement.FindFirst([System.Windows.Automation.TreeScope]::Children, $byPid)
-if ($window) {
-    Write-Host "window title: $($window.Current.Name)"
-    $window.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.Condition]::TrueCondition) |
-        ForEach-Object { $_.Current.Name } | Where-Object { $_ } | Select-Object -Unique -First 80 |
-        ForEach-Object { Write-Host "  text: $_" }
-} else {
-    Write-Warning '没找到 Sound Flow 的窗口'
+function Invoke-PageScript([string] $expression) {
+    $page = Invoke-RestMethod http://127.0.0.1:9222/json/list | Where-Object type -eq 'page' | Select-Object -First 1
+    if (-not $page) { throw '没找到 Sound Flow 的页面（WebView2 调试端口里没有 page）' }
+    $ws = [System.Net.WebSockets.ClientWebSocket]::new()
+    $ws.ConnectAsync([Uri] $page.webSocketDebuggerUrl, [Threading.CancellationToken]::None).Wait()
+    $request = @{ id = 1; method = 'Runtime.evaluate'; params = @{ expression = $expression; returnByValue = $true } } | ConvertTo-Json -Depth 5 -Compress
+    $bytes = [Text.Encoding]::UTF8.GetBytes($request)
+    $ws.SendAsync([ArraySegment[byte]]::new($bytes), 'Text', $true, [Threading.CancellationToken]::None).Wait()
+    $buffer = [byte[]]::new(1MB)
+    $message = [IO.MemoryStream]::new()
+    do {
+        $part = $ws.ReceiveAsync([ArraySegment[byte]]::new($buffer), [Threading.CancellationToken]::None).GetAwaiter().GetResult()
+        $message.Write($buffer, 0, $part.Count)
+    } until ($part.EndOfMessage)
+    $ws.Dispose()
+    ([Text.Encoding]::UTF8.GetString($message.ToArray()) | ConvertFrom-Json).result.result.value
 }
 
-# 截图：完整的存成文件（作为产物上传），缩小的 JPEG 以 base64 打进日志
+$text = Invoke-PageScript 'document.body.innerText'
+Write-Host '----- 页面文字 -----'
+$text -split "`n" | Where-Object { $_.Trim() } | ForEach-Object { Write-Host "  $_" }
+Write-Host '--------------------'
+if ($text -notmatch '声音流管理') { throw '页面没有渲染出来（可能是脚本被拦截或加载失败）' }
+if ($text -notmatch 'Windows 音频') { throw '没有用上原生音频引擎（Tauri 接口不可用？）' }
+if ($text -match '正在读取系统里的应用') { throw '15 秒后还停在加载中：读取系统音频的命令没有返回' }
+$state = if ($text -match '没能连接到系统音频') { '连接系统音频失败（错误页）' }
+    elseif ($text -match '还没有应用在使用声音') { '已连接，系统里暂时没有在用声音的应用' }
+    elseif ($text -match '本机输出') { '已连接，显示路由面板' }
+    else { '未知' }
+Write-Host "page state: $state"
+
+# 截图存成文件，作为产物上传，方便人工查看
 Add-Type -AssemblyName System.Windows.Forms, System.Drawing
 $bounds = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
 $shot = New-Object System.Drawing.Bitmap $bounds.Width, $bounds.Height
 [System.Drawing.Graphics]::FromImage($shot).CopyFromScreen($bounds.Location, [System.Drawing.Point]::Empty, $bounds.Size)
 $shot.Save($ScreenshotPath, [System.Drawing.Imaging.ImageFormat]::Png)
-$scale = [math]::Min(1.0, 960 / $bounds.Width)
-$small = New-Object System.Drawing.Bitmap $shot, ([int]($bounds.Width * $scale)), ([int]($bounds.Height * $scale))
-$jpeg = [System.Drawing.Imaging.ImageCodecInfo]::GetImageEncoders() | Where-Object MimeType -eq 'image/jpeg'
-$quality = New-Object System.Drawing.Imaging.EncoderParameters 1
-$quality.Param[0] = New-Object System.Drawing.Imaging.EncoderParameter([System.Drawing.Imaging.Encoder]::Quality, [long]60)
-$buffer = New-Object System.IO.MemoryStream
-$small.Save($buffer, $jpeg, $quality)
-$b64 = [Convert]::ToBase64String($buffer.ToArray())
-Write-Host "screen: $($bounds.Width)x$($bounds.Height), log copy $($b64.Length) chars"
-for ($i = 0; $i -lt $b64.Length; $i += 6000) {
-    Write-Host ('SHOT:' + $b64.Substring($i, [math]::Min(6000, $b64.Length - $i)))
-}
 
 Stop-Process -Id $app.Id -Force
 Stop-Process -Id $player.Id -Force -ErrorAction SilentlyContinue
