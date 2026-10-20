@@ -50,8 +50,10 @@ pub struct Source {
     pub routable: bool,
     /// 声音曲线正在处理这一路
     pub eq_active: bool,
-    /// 声音曲线处理出错时的说明
+    /// 声音曲线没能生效的原因（出错后已自动恢复直接输出）
     pub eq_error: Option<String>,
+    /// 声音曲线至今处理过多少秒有声音的音频，用来确认声音确实在流动
+    pub eq_seconds: f32,
 }
 
 /// 声音曲线能不能真正生效
@@ -62,6 +64,8 @@ pub struct EqStatus {
     pub available: bool,
     /// 那块虚拟声卡的名字，如 CABLE Input (VB-Audio Virtual Cable)
     pub sink_name: Option<String>,
+    /// 还没被占用的虚拟声卡数量：每个开曲线的应用要独占一块
+    pub free_sinks: usize,
 }
 
 #[derive(Debug, Clone, PartialEq, Default, Serialize)]
@@ -147,6 +151,7 @@ pub(crate) fn build_sources(sessions: &[SessionInfo], device_ids: &[String], def
                 routable: !first.system,
                 eq_active: false,
                 eq_error: None,
+                eq_seconds: 0.0,
             }
         })
         .collect()
@@ -210,34 +215,6 @@ pub(crate) fn name_from_path(path: &str) -> String {
 pub(crate) fn is_virtual_cable(full_name: &str) -> bool {
     let lower = full_name.to_lowercase();
     lower.contains("cable") && (lower.contains("vb-audio") || lower.contains("virtual cable") || lower.contains("virtual audio cable"))
-}
-
-/// 从一组发声的进程里挑出要抓取的「根」：抓一个进程会连同它的子进程一起抓，
-/// 所以祖先也在列表里的进程要跳过，否则同一份声音会被处理两遍。
-pub(crate) fn capture_roots(pids: &[u32], parent_of: impl Fn(u32) -> Option<u32>) -> Vec<u32> {
-    let mut roots: Vec<u32> = pids
-        .iter()
-        .copied()
-        .filter(|&pid| {
-            let mut current = pid;
-            // 进程号会被复用，父子关系可能成环，限定步数
-            for _ in 0..64 {
-                match parent_of(current) {
-                    Some(parent) if parent != current && parent != 0 => {
-                        if pids.contains(&parent) {
-                            return false;
-                        }
-                        current = parent;
-                    }
-                    _ => break,
-                }
-            }
-            true
-        })
-        .collect();
-    roots.sort_unstable();
-    roots.dedup();
-    roots
 }
 
 /// 名字重复的设备（同一块声卡的扬声器和耳机口）改用完整名称区分
@@ -358,22 +335,6 @@ mod tests {
         assert!(is_virtual_cable("Line 1 (Virtual Audio Cable)"));
         assert!(!is_virtual_cable("Voicemeeter Input (VB-Audio Voicemeeter VAIO)"));
         assert!(!is_virtual_cable("扬声器 (Realtek(R) Audio)"));
-    }
-
-    #[test]
-    fn capture_roots_skip_descendants_of_other_targets() {
-        // 1 ← 2 ← 3（3 的父进程是 2，2 的父进程是 1），5 独立
-        let parent = |pid: u32| match pid {
-            2 => Some(1),
-            3 => Some(2),
-            5 => Some(4),
-            _ => None,
-        };
-        assert_eq!(capture_roots(&[3, 1, 5], parent), vec![1, 5]);
-        assert_eq!(capture_roots(&[3, 5], parent), vec![3, 5]);
-        // 成环也不会卡死
-        let looped = |pid: u32| Some(if pid == 7 { 8 } else { 7 });
-        assert_eq!(capture_roots(&[9], looped), vec![9]);
     }
 
     #[test]

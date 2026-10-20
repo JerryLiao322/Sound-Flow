@@ -22,8 +22,10 @@ export interface AudioSource {
   routable: boolean;
   /** 声音曲线正在实际处理这一路（只有原生引擎会报告） */
   eqActive?: boolean;
-  /** 声音曲线处理出错时的说明 */
+  /** 声音曲线没能生效的原因（出错后已自动恢复直接输出） */
   eqError?: string | null;
+  /** 曲线至今处理过多少秒有声音的音频 */
+  eqSeconds?: number;
   /** 每个频段的增益（dB），与 EQ_BANDS 一一对应 */
   eq: number[];
   eqPreset: EqPresetId;
@@ -45,6 +47,8 @@ export interface EqStatus {
   available: boolean;
   /** 用来接住原声的虚拟声卡名称 */
   sinkName: string | null;
+  /** 还空着的虚拟声卡数量：每个开曲线的应用独占一块 */
+  freeSinks: number;
 }
 
 export interface Point {

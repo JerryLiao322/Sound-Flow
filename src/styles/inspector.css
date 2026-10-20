@@ -230,3 +230,9 @@
 .eq-setup .notice-action {
   margin-top: 8px;
 }
+
+.eq-setup.is-error {
+  border-color: var(--danger-line);
+  background: var(--danger-bg);
+  color: var(--danger-text);
+}

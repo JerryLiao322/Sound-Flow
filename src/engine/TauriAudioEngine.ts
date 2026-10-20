@@ -18,10 +18,11 @@ interface NativeSnapshot {
     routable: boolean;
     eqActive: boolean;
     eqError: string | null;
+    eqSeconds: number;
   }>;
   devices: Array<{ id: string; name: string; detail: string; kind: DeviceKind; volume: number }>;
   defaultDeviceId: string;
-  eq: { available: boolean; sinkName: string | null };
+  eq: { available: boolean; sinkName: string | null; freeSinks: number };
 }
 
 export function isTauri(): boolean {

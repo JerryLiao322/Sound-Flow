@@ -1,7 +1,7 @@
 {
   "name": "sound-flow",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "声音流管理：把每个应用的声音路由到指定的输出设备，并分别调节音量与声音曲线",
   "type": "module",
   "scripts": {

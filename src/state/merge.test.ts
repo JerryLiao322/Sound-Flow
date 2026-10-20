@@ -52,7 +52,7 @@ describe('mergeSnapshot', () => {
 
   it('曲线是否可用、是否在处理，都跟着系统走', () => {
     const next = systemSays((s) => {
-      s.eq = { available: false, sinkName: null };
+      s.eq = { available: false, sinkName: null, freeSinks: 0 };
       s.sources[0]!.eqActive = true;
       s.sources[0]!.eqError = '目标设备不可用';
     });

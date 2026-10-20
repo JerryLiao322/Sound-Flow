@@ -1,4 +1,6 @@
 import { VB_CABLE_URL, openExternal } from '../engine/desktop';
+import { useEngine } from '../engine/EngineContext';
+import { flatGains } from '../model/eq';
 import type { AudioSource, EqStatus } from '../model/types';
 
 interface Props {
@@ -16,6 +18,7 @@ function shortName(name: string | null): string {
 
 /** 声音曲线下方的状态说明：能不能生效、正在生效、出错了、要先装什么 */
 export function EqStatusNote({ native, status, source, autostart }: Props) {
+  const engine = useEngine();
   // 浏览器里用模拟数据开发界面，没什么要说明的
   if (!native) return null;
 
@@ -38,11 +41,30 @@ export function EqStatusNote({ native, status, source, autostart }: Props) {
   }
 
   if (source.eqError) {
-    return <p className="control-note is-error">曲线处理出错：{source.eqError}。稍后会自动重试。</p>;
+    // 后端失败后不会自己反复重试：先发一次平直清掉失败记录，再发当前曲线
+    const retry = () => {
+      engine.setSourceEq(source.id, flatGains());
+      engine.setSourceEq(source.id, source.eq);
+    };
+    return (
+      <div className="eq-setup is-error">
+        <p>曲线没能生效：{source.eqError}。</p>
+        <button type="button" className="notice-action" onClick={retry}>
+          重试
+        </button>
+      </div>
+    );
   }
 
   const flat = source.eq.every((g) => Math.abs(g) < 0.05);
   if (flat) {
+    if (status.freeSinks === 0) {
+      return (
+        <p className="control-note">
+          每块虚拟声卡同时只能给一个应用用，现在都被占用了。要同时给更多应用开曲线，可以再装一块（如 VB-CABLE A+B）。
+        </p>
+      );
+    }
     return (
       <p className="control-note">
         调整曲线后立即生效：这一路会经 {shortName(status.sinkName)} 处理，延迟约增加 30 毫秒。平直时不做处理。
@@ -54,10 +76,18 @@ export function EqStatusNote({ native, status, source, autostart }: Props) {
     return <p className="control-note">正在启用曲线…</p>;
   }
 
+  const seconds = source.eqSeconds ?? 0;
   return (
     <p className="control-note is-ok">
-      ✓ 曲线已生效（经 {shortName(status.sinkName)} 处理）。
+      ✓ 曲线已生效，
+      {seconds > 0 ? `已处理 ${formatSeconds(seconds)}声音。` : '等这个应用发出声音就会开始处理。'}
       {autostart === false && '建议打开右上角的「开机启动」：Sound Flow 没在运行时，这个应用会没有声音。'}
     </p>
   );
+}
+
+function formatSeconds(seconds: number): string {
+  if (seconds < 60) return `${Math.floor(seconds)} 秒`;
+  const minutes = Math.floor(seconds / 60);
+  return minutes < 60 ? `${minutes} 分钟` : `${Math.floor(minutes / 60)} 小时 ${minutes % 60} 分钟`;
 }

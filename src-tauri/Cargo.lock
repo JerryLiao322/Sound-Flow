@@ -3265,7 +3265,7 @@ dependencies = [
 
 [[package]]
 name = "sound-flow"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "serde",
  "serde_json",
@@ -3279,7 +3279,7 @@ dependencies = [
 
 [[package]]
 name = "soundflow-audio"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "serde",
  "serde_json",

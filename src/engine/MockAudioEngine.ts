@@ -38,7 +38,7 @@ export class MockAudioEngine implements AudioEngine {
       devices: structuredClone(this.devices),
       defaultDeviceId: 'hk',
       // 模拟引擎假装曲线一直生效
-      eq: { available: true, sinkName: null },
+      eq: { available: true, sinkName: null, freeSinks: 1 },
     };
   }
 

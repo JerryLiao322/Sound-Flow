@@ -4,7 +4,7 @@ resolver = "2"
 
 [package]
 name = "sound-flow"
-version = "0.2.0"
+version = "0.2.1"
 description = "声音流管理：把每个应用的声音路由到指定的输出设备"
 edition = "2021"
 

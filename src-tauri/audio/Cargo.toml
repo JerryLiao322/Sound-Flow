@@ -1,6 +1,6 @@
 [package]
 name = "soundflow-audio"
-version = "0.2.0"
+version = "0.2.1"
 description = "Windows Core Audio 封装：枚举输出设备与音频会话，按应用路由、调音量、读电平"
 edition = "2021"
 
@@ -15,7 +15,6 @@ windows = { version = "0.62", features = [
   "Win32_Devices_FunctionDiscovery",
   "Win32_Media_Audio",
   "Win32_Media_Audio_Endpoints",
-  "Win32_System_Diagnostics_ToolHelp",
   "Win32_Storage_FileSystem",
   "Win32_System_Com",
   "Win32_System_Com_StructuredStorage",
