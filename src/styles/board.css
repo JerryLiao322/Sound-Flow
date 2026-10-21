@@ -625,3 +625,66 @@
   font-size: 13px;
   font-weight: 600;
 }
+
+/* ---------- 设为默认设备 ---------- */
+
+.device-item {
+  position: relative;
+}
+
+/* 悬停或聚焦到某一行时才出现，占掉右侧计数的位置 */
+.set-default {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  z-index: 1;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: 12px;
+  border: 1px solid var(--line-3);
+  background: var(--surface-3);
+  color: var(--text-2);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(-50%);
+  transition: opacity 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.set-default:hover {
+  border-color: var(--accent-line);
+  color: var(--text);
+}
+
+.device-item:hover .set-default,
+.device-item:focus-within .set-default {
+  opacity: 1;
+}
+
+/* 给按钮让出位置，设备名照常省略号截断 */
+.can-set-default:hover .device-row,
+.can-set-default:focus-within .device-row {
+  padding-right: 92px;
+}
+
+.can-set-default:hover .device-count,
+.can-set-default:focus-within .device-count {
+  display: none;
+}
+
+/* 触屏没有悬停，一直显示 */
+@media (hover: none) {
+  .set-default {
+    opacity: 1;
+  }
+
+  .can-set-default .device-row {
+    padding-right: 92px;
+  }
+
+  .can-set-default .device-count {
+    display: none;
+  }
+}

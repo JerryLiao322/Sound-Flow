@@ -13,6 +13,7 @@ export const pendingKey = {
   sourceEnabled: (id: string) => `src:${id}:enabled`,
   sourceDevice: (id: string) => `src:${id}:device`,
   deviceVolume: (id: string) => `dev:${id}:volume`,
+  defaultDevice: 'default-device',
 };
 
 /**
@@ -58,5 +59,9 @@ export function mergeSnapshot(
   });
 
   const selectedId = sources.some((s) => s.id === state.selectedId) ? state.selectedId : (sources[0]?.id ?? '');
-  return { sources, devices, selectedId, defaultDeviceId: snapshot.defaultDeviceId, eq: snapshot.eq };
+  const defaultDeviceId =
+    pending.has(pendingKey.defaultDevice) && deviceIds.has(state.defaultDeviceId)
+      ? state.defaultDeviceId
+      : snapshot.defaultDeviceId;
+  return { sources, devices, selectedId, defaultDeviceId, eq: snapshot.eq };
 }

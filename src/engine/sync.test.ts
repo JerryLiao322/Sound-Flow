@@ -18,6 +18,7 @@ function recorder() {
     setSourceVolume: (id, v) => calls.push(`volume ${id} ${v}`),
     setSourceEq: (id) => calls.push(`eq ${id}`),
     setDeviceVolume: (id, v) => calls.push(`device ${id} ${v}`),
+    setDefaultDevice: (id) => calls.push(`default ${id}`),
     onLevels: () => () => {},
   };
   return { engine, calls };
@@ -64,5 +65,25 @@ describe('syncEngine', () => {
     const ui = createState(snapshot, prefs, { systemOwned: true });
     syncEngine(engine, engineView, ui);
     expect(calls).toEqual(['eq spotify']);
+  });
+
+  it('换默认设备只下发一条指令，跟随默认的应用不再逐个路由', () => {
+    const { engine, calls } = recorder();
+    const before = initial();
+    const after = reducer(before, { type: 'setDefaultDevice', id: 'monitor' });
+    const sent: string[] = [];
+    syncEngine(engine, before, after, (key) => sent.push(key));
+    expect(calls).toEqual(['default monitor']);
+    // 搬过去的应用照样标成「等系统确认」，免得旧快照把连线拽回去
+    expect(sent).toEqual(['default-device', 'src:spotify:device', 'src:chrome:device', 'src:system:device']);
+  });
+
+  it('换默认设备的同时手动改了别的路由，那条照常下发', () => {
+    const { engine, calls } = recorder();
+    const before = initial();
+    let after = reducer(before, { type: 'setDefaultDevice', id: 'monitor' });
+    after = reducer(after, { type: 'route', sourceId: 'game', deviceId: 'stream' });
+    syncEngine(engine, before, after);
+    expect(calls).toEqual(['default monitor', 'route game stream']);
   });
 });

@@ -19,6 +19,8 @@ export type Action =
   | { type: 'route'; sourceId: string; deviceId: string }
   | { type: 'sourceVolume'; id: string; volume: number }
   | { type: 'deviceVolume'; id: string; volume: number }
+  /** 设为系统默认输出设备：连在原默认设备上的（跟随默认的）一起搬过去 */
+  | { type: 'setDefaultDevice'; id: string }
   | { type: 'eqBand'; id: string; band: number; gain: number }
   | { type: 'eqPreset'; id: string; preset: BuiltinPresetId }
   | { type: 'reorder'; from: number; to: number }
@@ -51,6 +53,16 @@ export function reducer(state: SoundFlowState, action: Action): SoundFlowState {
         ...state,
         devices: state.devices.map((d) => (d.id === action.id ? { ...d, volume: clampVolume(action.volume) } : d)),
       };
+
+    case 'setDefaultDevice': {
+      const previous = state.defaultDeviceId;
+      if (action.id === previous || !state.devices.some((d) => d.id === action.id)) return state;
+      return {
+        ...state,
+        defaultDeviceId: action.id,
+        sources: state.sources.map((s) => (s.deviceId === previous ? { ...s, deviceId: action.id } : s)),
+      };
+    }
 
     case 'eqBand':
       if (action.band < 0 || action.band >= EQ_BANDS.length) return state;

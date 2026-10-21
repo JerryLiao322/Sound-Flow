@@ -97,6 +97,10 @@ export class TauriAudioEngine implements AudioEngine {
     this.call('audio_set_device_volume', { device, volume });
   }
 
+  setDefaultDevice(device: string): void {
+    this.call('audio_set_default_device', { device });
+  }
+
   private call(command: string, args: Record<string, unknown>): void {
     invoke(command, args).catch((e: unknown) => {
       const message = typeof e === 'string' ? e : e instanceof Error ? e.message : String(e);

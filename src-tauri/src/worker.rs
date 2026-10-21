@@ -31,6 +31,7 @@ pub enum Command {
     SetSourceVolume { source: String, volume: u8, reply: Reply<()> },
     SetSourceEnabled { source: String, enabled: bool, reply: Reply<()> },
     SetDeviceVolume { device: String, volume: u8, reply: Reply<()> },
+    SetDefaultDevice { device: String, reply: Reply<()> },
     SetSourceEq { source: String, gains: Vec<f32>, reply: Reply<()> },
     /// 退出前：把为声音曲线改过路由的应用切回去，然后结束音频线程
     Shutdown { reply: Reply<()> },
@@ -47,6 +48,7 @@ impl Command {
             | Command::SetSourceVolume { reply, .. }
             | Command::SetSourceEnabled { reply, .. }
             | Command::SetDeviceVolume { reply, .. }
+            | Command::SetDefaultDevice { reply, .. }
             | Command::SetSourceEq { reply, .. }
             | Command::Shutdown { reply } => {
                 let _ = reply.send(Err(message.to_string()));
@@ -116,7 +118,7 @@ fn run(app: AppHandle, rx: Receiver<Command>, state_file: Option<PathBuf>) {
             }
             Ok(command) => {
                 let now = Instant::now();
-                if matches!(command, Command::SetRoute { .. } | Command::SetSourceEq { .. }) {
+                if matches!(command, Command::SetRoute { .. } | Command::SetSourceEq { .. } | Command::SetDefaultDevice { .. }) {
                     next_refresh = next_refresh.min(now + REFRESH_AFTER_ROUTE);
                 }
                 if !handle(&mut system, command) {
@@ -166,6 +168,7 @@ fn handle(system: &mut AudioSystem, command: Command) -> bool {
         Command::SetSourceVolume { source, volume, reply } => (reply, system.set_source_volume(&source, volume)),
         Command::SetSourceEnabled { source, enabled, reply } => (reply, system.set_source_enabled(&source, enabled)),
         Command::SetDeviceVolume { device, volume, reply } => (reply, system.set_device_volume(&device, volume)),
+        Command::SetDefaultDevice { device, reply } => (reply, system.set_default_device(&device)),
         Command::SetSourceEq { source, gains, reply } => (reply, system.set_source_eq(&source, &gains)),
         Command::Shutdown { reply } => {
             system.shutdown();

@@ -35,6 +35,11 @@ async fn audio_set_device_volume(audio: State<'_, AudioHandle>, device: String, 
 }
 
 #[tauri::command]
+async fn audio_set_default_device(audio: State<'_, AudioHandle>, device: String) -> Result<(), String> {
+    audio.request(|reply| Command::SetDefaultDevice { device, reply }).await
+}
+
+#[tauri::command]
 async fn audio_set_source_eq(audio: State<'_, AudioHandle>, source: String, gains: Vec<f32>) -> Result<(), String> {
     audio.request(|reply| Command::SetSourceEq { source, gains, reply }).await
 }
@@ -100,6 +105,7 @@ pub fn run() {
             audio_set_source_volume,
             audio_set_source_enabled,
             audio_set_device_volume,
+            audio_set_default_device,
             audio_set_source_eq,
         ])
         .build(tauri::generate_context!())

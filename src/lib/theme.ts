@@ -12,14 +12,14 @@ export interface ThemeInfo {
 }
 
 export const THEMES: ThemeInfo[] = [
+  { id: 'mono', label: '极简', swatch: ['#0a0a0a', '#f5f5f5'] },
   { id: 'jade', label: '墨玉', swatch: ['#10201d', '#e3bd6b'] },
   { id: 'neon', label: '霓虹', swatch: ['#120f2e', '#22d3ee'] },
   { id: 'daylight', label: '晴空', swatch: ['#f4f6fa', '#0067c0'] },
   { id: 'console', label: '调音台', swatch: ['#1d1d1f', '#ff8a1f'] },
-  { id: 'mono', label: '极简', swatch: ['#0a0a0a', '#f5f5f5'] },
 ];
 
-export const DEFAULT_THEME: ThemeId = 'jade';
+export const DEFAULT_THEME: ThemeId = 'mono';
 
 const STORAGE_KEY = 'sound-flow:theme';
 

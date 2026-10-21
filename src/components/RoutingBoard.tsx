@@ -81,6 +81,7 @@ export function RoutingBoard({ state, dispatch, autostart }: Props) {
             defaultDeviceId={state.defaultDeviceId}
             dropTargetId={pending?.overDeviceId ?? null}
             onPick={(deviceId) => dispatch({ type: 'route', sourceId: selected.id, deviceId })}
+            onSetDefault={(id) => dispatch({ type: 'setDefaultDevice', id })}
             registerPort={registerPort}
           />
         </div>

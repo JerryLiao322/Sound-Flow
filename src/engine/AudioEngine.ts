@@ -35,6 +35,11 @@ export interface AudioEngine {
   setSourceVolume(sourceId: string, volume: number): void;
   setSourceEq(sourceId: string, gains: readonly number[]): void;
   setDeviceVolume(deviceId: string, volume: number): void;
+  /**
+   * 设为系统默认输出设备。跟随默认的应用（连在原默认设备上的）由引擎自己搬过去，
+   * 不需要再逐个 setRoute；单独指定了设备的应用不受影响。
+   */
+  setDefaultDevice(deviceId: string): void;
   /** 订阅实时电平，返回取消订阅函数 */
   onLevels(listener: (frame: LevelFrame) => void): () => void;
 }

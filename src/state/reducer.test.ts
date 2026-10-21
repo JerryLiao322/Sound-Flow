@@ -61,6 +61,22 @@ describe('reducer', () => {
     expect(reducer(before, { type: 'reorder', from: 0, to: 9 })).toBe(before);
   });
 
+  it('setDefaultDevice 换默认设备，连在原默认设备上的一起搬过去', () => {
+    const before = initial();
+    const s = reducer(before, { type: 'setDefaultDevice', id: 'monitor' });
+    expect(s.defaultDeviceId).toBe('monitor');
+    // spotify、chrome、系统声音原来在 hk（默认）上；游戏、Discord 单独连在耳机上，不动
+    expect(s.sources.map((x) => [x.id, x.deviceId])).toEqual([
+      ['spotify', 'monitor'],
+      ['game', 'headset'],
+      ['discord', 'headset'],
+      ['chrome', 'monitor'],
+      ['system', 'monitor'],
+    ]);
+    expect(reducer(before, { type: 'setDefaultDevice', id: 'hk' })).toBe(before);
+    expect(reducer(before, { type: 'setDefaultDevice', id: 'nope' })).toBe(before);
+  });
+
   it('resetRoutes 全部回到默认设备、平直曲线，但保留音量', () => {
     const s = reducer(initial(), { type: 'resetRoutes' });
     for (const x of s.sources) {

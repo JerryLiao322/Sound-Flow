@@ -9,6 +9,8 @@ interface Props {
   /** 拖线时指针正悬停的设备 */
   dropTargetId: string | null;
   onPick: (deviceId: string) => void;
+  /** 设为系统默认输出设备 */
+  onSetDefault: (deviceId: string) => void;
   registerPort: (key: string) => (el: HTMLElement | null) => void;
 }
 
@@ -16,7 +18,8 @@ interface Props {
  * 中列：本机的输出设备，对应参考图右侧的分组卡片。
  * 每一行左边缘有一个输入端口；点一下某行 = 把当前选中的应用接到这台设备。
  */
-export function DeviceGroup({ devices, sources, selected, defaultDeviceId, dropTargetId, onPick, registerPort }: Props) {
+export function DeviceGroup(props: Props) {
+  const { devices, sources, selected, defaultDeviceId, dropTargetId, onPick, onSetDefault, registerPort } = props;
   const linked = new Map<string, number>();
   for (const s of sources) {
     if (s.enabled) linked.set(s.deviceId, (linked.get(s.deviceId) ?? 0) + 1);
@@ -42,9 +45,10 @@ export function DeviceGroup({ devices, sources, selected, defaultDeviceId, dropT
       <ul className="device-list">
         {devices.map((d) => {
           const isTarget = selected.enabled && selected.deviceId === d.id;
+          const isDefault = d.id === defaultDeviceId;
           const count = linked.get(d.id) ?? 0;
           return (
-            <li key={d.id}>
+            <li key={d.id} className={cx('device-item', !isDefault && 'can-set-default')}>
               <button
                 type="button"
                 className={cx(
@@ -57,7 +61,7 @@ export function DeviceGroup({ devices, sources, selected, defaultDeviceId, dropT
                 aria-pressed={isTarget}
                 aria-disabled={!selected.routable}
                 aria-label={`把 ${selected.name} 输出到 ${d.name}`}
-                title={d.id === defaultDeviceId ? '系统默认输出设备：连到这里就是跟随系统默认' : undefined}
+                title={isDefault ? '系统默认输出设备：连到这里就是跟随系统默认' : undefined}
                 onClick={() => selected.routable && onPick(d.id)}
               >
                 <span
@@ -69,7 +73,7 @@ export function DeviceGroup({ devices, sources, selected, defaultDeviceId, dropT
                 <span className="device-text">
                   <span className="device-name-row">
                     <span className="device-name">{d.name}</span>
-                    {d.id === defaultDeviceId && <span className="default-tag">默认</span>}
+                    {isDefault && <span className="default-tag">默认</span>}
                   </span>
                   <span className="device-detail">{d.detail}</span>
                 </span>
@@ -79,6 +83,16 @@ export function DeviceGroup({ devices, sources, selected, defaultDeviceId, dropT
                   </span>
                 )}
               </button>
+              {!isDefault && (
+                <button
+                  type="button"
+                  className="set-default"
+                  title={`把 ${d.name} 设为 Windows 的默认输出设备；跟随默认的应用会一起切过去`}
+                  onClick={() => onSetDefault(d.id)}
+                >
+                  设为默认
+                </button>
+              )}
             </li>
           );
         })}

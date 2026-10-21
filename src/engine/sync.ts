@@ -1,5 +1,6 @@
 import { pendingKey } from '../state/merge';
 import type { SoundFlowState } from '../state/reducer';
+import type { AudioSource } from '../model/types';
 import type { AudioEngine } from './AudioEngine';
 
 /**
@@ -13,10 +14,23 @@ export function syncEngine(
   next: SoundFlowState,
   onSent: (key: string) => void = () => {},
 ): void {
+  // 默认设备先换：跟随默认的应用由引擎自己搬，不能再逐个 setRoute，
+  // 否则指令先后一乱，它们会被钉死在新设备上，不再跟随默认
+  const defaultChanged = prev !== null && prev.defaultDeviceId !== next.defaultDeviceId;
+  if (defaultChanged) {
+    engine.setDefaultDevice(next.defaultDeviceId);
+    onSent(pendingKey.defaultDevice);
+  }
+  const followedDefault = (p: AudioSource | undefined, s: AudioSource) =>
+    defaultChanged && p?.deviceId === prev.defaultDeviceId && s.deviceId === next.defaultDeviceId;
+
   const prevSources = new Map(prev?.sources.map((s) => [s.id, s]));
   for (const s of next.sources) {
     const p = prevSources.get(s.id);
-    if (s.routable && (!p || p.deviceId !== s.deviceId)) {
+    if (followedDefault(p, s)) {
+      // 包括不能单独路由的系统声音：它们也跟着默认设备走
+      onSent(pendingKey.sourceDevice(s.id));
+    } else if (s.routable && (!p || p.deviceId !== s.deviceId)) {
       engine.setRoute(s.id, s.deviceId);
       onSent(pendingKey.sourceDevice(s.id));
     }

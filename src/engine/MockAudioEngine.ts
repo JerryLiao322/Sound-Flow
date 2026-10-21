@@ -29,6 +29,7 @@ export class MockAudioEngine implements AudioEngine {
 
   private sources = structuredClone(MOCK_SOURCES);
   private devices = structuredClone(MOCK_DEVICES);
+  private defaultDeviceId = 'hk';
   private listeners = new Set<(frame: LevelFrame) => void>();
   private timer: ReturnType<typeof setInterval> | null = null;
 
@@ -36,7 +37,7 @@ export class MockAudioEngine implements AudioEngine {
     return {
       sources: structuredClone(this.sources),
       devices: structuredClone(this.devices),
-      defaultDeviceId: 'hk',
+      defaultDeviceId: this.defaultDeviceId,
       // 模拟引擎假装曲线一直生效
       eq: { available: true, sinkName: null, freeSinks: 1 },
     };
@@ -74,6 +75,15 @@ export class MockAudioEngine implements AudioEngine {
   setDeviceVolume(deviceId: string, volume: number): void {
     const device = this.devices.find((d) => d.id === deviceId);
     if (device) device.volume = volume;
+  }
+
+  setDefaultDevice(deviceId: string): void {
+    if (!this.devices.some((d) => d.id === deviceId)) return;
+    // 和真实系统一样：连在原默认设备上的都跟着走
+    for (const s of this.sources) {
+      if (s.deviceId === this.defaultDeviceId) s.deviceId = deviceId;
+    }
+    this.defaultDeviceId = deviceId;
   }
 
   onLevels(listener: (frame: LevelFrame) => void): () => void {

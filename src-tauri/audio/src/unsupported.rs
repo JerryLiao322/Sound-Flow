@@ -35,6 +35,10 @@ impl AudioSystem {
         Err(unsupported())
     }
 
+    pub fn set_default_device(&mut self, _device_id: &str) -> Result<()> {
+        Err(unsupported())
+    }
+
     pub fn set_device_volume(&mut self, _device_id: &str, _volume: u8) -> Result<()> {
         Err(unsupported())
     }

@@ -35,6 +35,13 @@ describe('mergeSnapshot', () => {
     expect(merged.sources[0]!.volume).toBe(30);
   });
 
+  it('刚换的默认设备在系统确认前不被旧快照改回去', () => {
+    const ui = reducer(initial(), { type: 'setDefaultDevice', id: 'monitor' });
+    const stale = snapshot();
+    expect(mergeSnapshot(ui, stale, new Set([pendingKey.defaultDevice]), null).defaultDeviceId).toBe('monitor');
+    expect(mergeSnapshot(ui, stale, none, null).defaultDeviceId).toBe('hk');
+  });
+
   it('保留界面的顺序和声音曲线', () => {
     let state = reducer(initial(), { type: 'reorder', from: 0, to: 3 });
     state = reducer(state, { type: 'eqPreset', id: 'spotify', preset: 'night' });

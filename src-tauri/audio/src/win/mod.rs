@@ -1,3 +1,4 @@
+mod default_device;
 mod eq_stream;
 mod policy;
 mod process;
@@ -141,6 +142,7 @@ impl AudioSystem {
     /// 重新枚举设备和音频会话，并让声音曲线的处理流跟上变化
     pub fn refresh(&mut self) -> Result<()> {
         let enumerator = &self.enumerator;
+        let previous_default = std::mem::take(&mut self.default_device_id);
         self.default_device_id = unsafe { enumerator.GetDefaultAudioEndpoint(eRender, eMultimedia) }
             .ok()
             .and_then(|d| device_id(&d))
@@ -198,6 +200,7 @@ impl AudioSystem {
         self.sinks = sinks;
         self.processes.retain(|pid, _| seen_pids.contains(pid));
 
+        self.follow_default_change(&previous_default);
         self.recover_stranded();
         self.maintain_eq();
         self.apply_eq_overrides();
@@ -411,6 +414,27 @@ impl AudioSystem {
         }
     }
 
+    /// 系统默认设备换了：连在「默认」上的曲线处理流也跟过去，和没开曲线的应用一致
+    fn follow_default_change(&mut self, previous: &str) {
+        let current = self.default_device_id.clone();
+        // 虚拟声卡被设成默认时不跟：处理流不能送回虚拟声卡自己
+        if previous.is_empty() || previous == current || !self.devices.iter().any(|d| d.info.id == current) {
+            return;
+        }
+        let moved: Vec<(String, SavedRoute)> = self
+            .eq
+            .iter_mut()
+            .filter(|(_, entry)| entry.target == previous)
+            .map(|(app_id, entry)| {
+                entry.target = current.clone();
+                (app_id.clone(), entry.saved())
+            })
+            .collect();
+        for (app_id, saved) in moved {
+            self.routes.set(&app_id, saved);
+        }
+    }
+
     fn free_sink(&self) -> Option<&Sink> {
         self.sinks.iter().find(|s| !self.eq.values().any(|e| e.sink == s.id))
     }
@@ -586,6 +610,29 @@ impl AudioSystem {
         Ok(())
     }
 
+    /// 把某个设备设为系统默认输出设备。跟随默认的应用（包括系统声音）会随之切过去，
+    /// 单独指定了设备的应用不受影响。
+    pub fn set_default_device(&mut self, device_id: &str) -> Result<()> {
+        if !self.devices.iter().any(|d| d.info.id == device_id) {
+            return Err(AudioError::new("找不到这个输出设备，它可能已经断开"));
+        }
+        if device_id == self.default_device_id {
+            return Ok(());
+        }
+        default_device::set_default_endpoint(device_id).map_err(context("设置默认输出设备失败"))?;
+        let previous = std::mem::replace(&mut self.default_device_id, device_id.to_string());
+        // 先记下，下一次刷新再以系统状态为准（会话搬到新设备要一点时间）
+        for source in &mut self.sources {
+            if source.device_id == previous && self.persisted.get(&source.id).is_none_or(|d| *d != previous) {
+                source.device_id = device_id.to_string();
+            }
+        }
+        self.follow_default_change(&previous);
+        self.maintain_eq();
+        self.apply_eq_overrides();
+        Ok(())
+    }
+
     pub fn set_device_volume(&mut self, device_id: &str, volume: u8) -> Result<()> {
         let entry = self
             .devices
@@ -677,6 +724,24 @@ pub fn diagnostics() -> Vec<String> {
             lines.push(format!("policy: {verdict}"));
         }
         Err(e) => lines.push(format!("policy: unavailable: {}", e.message())),
+    }
+    // 设回当前的默认设备（不改变任何东西），验证方法表位置；没有设备时用假 ID，应当返回错误而不是崩溃
+    let current_default = unsafe { CoCreateInstance::<_, IMMDeviceEnumerator>(&MMDeviceEnumerator, None, CLSCTX_ALL) }
+        .ok()
+        .and_then(|e| unsafe { e.GetDefaultAudioEndpoint(eRender, eMultimedia) }.ok())
+        .and_then(|d| device_id(&d));
+    match &current_default {
+        Some(id) => {
+            let result = default_device::set_default_endpoint(id).map_err(|e| e.message());
+            lines.push(format!("default: re-set current = {result:?}"));
+            if result.is_ok() {
+                lines.push("default: DEFAULT_SET_OK".into());
+            }
+        }
+        None => {
+            let result = default_device::set_default_endpoint("{0.0.0.00000000}.{00000000-0000-0000-0000-00000000c0de}");
+            lines.push(format!("default: no device, fake id -> {:?}", result.map_err(|e| e.message())));
+        }
     }
     if com.is_ok() {
         unsafe { CoUninitialize() };

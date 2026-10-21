@@ -20,7 +20,7 @@
         "minHeight": 560,
         "center": true,
         "theme": "Dark",
-        "backgroundColor": "#060a09",
+        "backgroundColor": "#0a0a0a",
         "visible": false
       }
     ],
