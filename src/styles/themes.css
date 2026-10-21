@@ -1,0 +1,782 @@
+/*
+ * 主题：只改 base.css 里的变量，外加少量各自的结构差异。
+ * 「墨玉」就是 base.css 的默认值，这里不用再写。
+ * --c0…--c5 是每一路声音流的专属颜色（连线、端口、方块），不定义就统一用 --wire。
+ */
+
+/* ======================================================================
+ * 霓虹：深靛蓝夜色，每一路一种荧光色，连线会发光
+ * ====================================================================== */
+
+[data-theme='neon'] {
+  --bg: #07061a;
+  --text: #eef0ff;
+  --text-2: rgba(226, 230, 255, 0.66);
+  --text-3: rgba(200, 206, 255, 0.42);
+  --line: rgba(150, 140, 255, 0.1);
+  --line-2: rgba(150, 140, 255, 0.18);
+  --line-3: rgba(170, 160, 255, 0.36);
+  --surface-1: rgba(140, 130, 255, 0.05);
+  --surface-2: rgba(140, 130, 255, 0.08);
+  --surface-3: rgba(140, 130, 255, 0.14);
+
+  --c0: #22d3ee;
+  --c1: #f472b6;
+  --c2: #a3e635;
+  --c3: #fbbf24;
+  --c4: #a78bfa;
+  --c5: #fb7185;
+
+  --accent-hi: #7df3ff;
+  --accent: #22d3ee;
+  --accent-lo: #8b5cf6;
+  --accent-ink: #04121a;
+  --accent-glow: rgba(34, 211, 238, 0.5);
+  --accent-line: rgba(34, 211, 238, 0.55);
+  --accent-soft: rgba(34, 211, 238, 0.1);
+
+  --page-bg:
+    radial-gradient(900px 600px at 85% -10%, rgba(139, 92, 246, 0.28), transparent 60%),
+    radial-gradient(800px 600px at -5% 105%, rgba(34, 211, 238, 0.16), transparent 60%),
+    var(--bg);
+  --board-bg:
+    radial-gradient(70% 90% at 100% 0%, rgba(139, 92, 246, 0.2), transparent 60%),
+    radial-gradient(60% 80% at 0% 100%, rgba(34, 211, 238, 0.1), transparent 70%),
+    linear-gradient(160deg, rgba(24, 20, 60, 0.92), rgba(10, 9, 30, 0.95));
+  --board-border: rgba(160, 140, 255, 0.24);
+  --board-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4), 0 30px 90px rgba(76, 29, 149, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --group-bg: rgba(20, 16, 50, 0.6);
+  --group-border: rgba(160, 140, 255, 0.18);
+  --control-bg: rgba(6, 5, 20, 0.45);
+  --control-border: rgba(160, 140, 255, 0.12);
+
+  --card-bg: rgba(30, 26, 70, 0.55);
+  --card-bg-hover: rgba(40, 34, 90, 0.6);
+  --card-border: rgba(160, 140, 255, 0.12);
+  --card-lifted: #241f52;
+  --handle-bg: transparent;
+  --handle-border: transparent;
+  --row-border-sel: var(--accent-line);
+  --count-bg: rgba(139, 92, 246, 0.25);
+
+  --toggle-border: rgba(160, 140, 255, 0.22);
+  --toggle-bg: rgba(10, 8, 30, 0.6);
+  --knob: #4b4775;
+
+  --wire: #8b80d8;
+  --wire-width: 2;
+  --wire-opacity: 0.5;
+  --wire-width-sel: 2.6;
+  --wire-opacity-sel: 1;
+  --flow-opacity: 0.9;
+  --port-core: #0b0a22;
+  --port-ring: rgba(160, 140, 255, 0.4);
+  --port-dot: rgba(160, 140, 255, 0.5);
+
+  --track-bg: rgba(160, 140, 255, 0.16);
+  --thumb: #ffffff;
+  --thumb-ring: #0b0a22;
+  --meter-bg: rgba(160, 140, 255, 0.16);
+  --meter-fill: linear-gradient(90deg, #22d3ee, #a78bfa 60%, #f472b6);
+  --grid: rgba(160, 140, 255, 0.08);
+  --grid-zero: rgba(160, 140, 255, 0.3);
+  --eq-node-fill: #0b0a22;
+  --eq-tip-stroke: #0b0a22;
+  --ok: #5eead4;
+
+  --logo-bg: #14113a;
+  --logo-border: rgba(160, 140, 255, 0.4);
+  --logo-wire: #f472b6;
+  --logo-port: #22d3ee;
+  --logo-core: #07061a;
+}
+
+/* 跟着每一路颜色变的变量：要在带 --src 的元素上重新计算 */
+[data-theme='neon'],
+[data-theme='neon'] :is(.source-card, .wire, .inspector) {
+  --card-bg-sel: color-mix(in srgb, var(--src, #22d3ee) 12%, rgba(30, 26, 70, 0.8));
+  --card-border-sel: color-mix(in srgb, var(--src, #22d3ee) 70%, transparent);
+  --card-shadow-sel: 0 0 26px color-mix(in srgb, var(--src, #22d3ee) 28%, transparent);
+  --sel-bar: var(--src, var(--accent));
+  --sel-bar-glow: var(--src, var(--accent));
+
+  --tile-bg: color-mix(in srgb, var(--src, #a78bfa) 16%, rgba(10, 8, 30, 0.9));
+  --tile-border: color-mix(in srgb, var(--src, #a78bfa) 55%, transparent);
+  --tile-shadow: 0 0 14px color-mix(in srgb, var(--src, #a78bfa) 30%, transparent);
+  --tile-text: var(--src, #c4b5fd);
+
+  --badge-bg: color-mix(in srgb, var(--src, #22d3ee) 14%, transparent);
+  --badge-ink: var(--src, var(--accent-hi));
+  --badge-border: color-mix(in srgb, var(--src, #22d3ee) 55%, transparent);
+  --badge-shadow: 0 0 12px color-mix(in srgb, var(--src, #22d3ee) 25%, transparent);
+  --toggle-border-on: color-mix(in srgb, var(--src, #22d3ee) 60%, transparent);
+  --toggle-bg-on: color-mix(in srgb, var(--src, #22d3ee) 14%, transparent);
+  --knob-on: var(--src, var(--accent));
+  --knob-on-glow: 0 0 12px var(--src, var(--accent));
+  --wire-glow: drop-shadow(0 0 6px var(--src, var(--accent)));
+  --flow: var(--src, #ffffff);
+  --port-ring-on: var(--src, rgba(200, 190, 255, 0.8));
+  --port-ring-hot: var(--src, #ffffff);
+  --port-dot-on: var(--src, #e0dcff);
+  --port-dot-hot: var(--src, #ffffff);
+  --port-halo: color-mix(in srgb, var(--src, #8b5cf6) 12%, transparent);
+  --port-hot-glow: 0 0 16px var(--src, rgba(200, 190, 255, 0.8));
+  --eq-fill: var(--src, #22d3ee);
+}
+
+[data-theme='neon'] .board-title {
+  background: linear-gradient(90deg, #ffffff, #c4b5fd 55%, #7df3ff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+[data-theme='neon'] .eyebrow {
+  color: #a78bfa;
+}
+
+[data-theme='neon'] .inspector .eq-curve,
+[data-theme='neon'] .inspector .eq-node-dot {
+  stroke: var(--src, var(--accent));
+}
+
+[data-theme='neon'] .inspector .eq-curve {
+  filter: drop-shadow(0 0 6px var(--src, var(--accent)));
+}
+
+[data-theme='neon'] .inspector .eq-node.is-hot .eq-node-dot {
+  fill: var(--src, var(--accent));
+}
+
+[data-theme='neon'] .inspector .range::-webkit-slider-runnable-track {
+  background: linear-gradient(90deg, #8b5cf6, var(--src, #22d3ee) var(--val), var(--track-bg) var(--val));
+}
+
+/* ======================================================================
+ * 晴空：浅色，像 Windows 11 设置页：白卡片、柔和阴影、系统蓝
+ * ====================================================================== */
+
+[data-theme='daylight'] {
+  color-scheme: light;
+
+  --bg: #eef1f6;
+  --text: #1a1d23;
+  --text-2: rgba(26, 29, 35, 0.66);
+  --text-3: rgba(26, 29, 35, 0.46);
+  --line: rgba(20, 30, 50, 0.07);
+  --line-2: rgba(20, 30, 50, 0.1);
+  --line-3: rgba(20, 30, 50, 0.22);
+  --surface-1: rgba(255, 255, 255, 0.7);
+  --surface-2: #ffffff;
+  --surface-3: #ffffff;
+
+  --c0: #0067c0;
+  --c1: #c239b3;
+  --c2: #0f9d58;
+  --c3: #e8710a;
+  --c4: #6b4fbb;
+  --c5: #d13438;
+
+  --accent-hi: #005fb8;
+  --accent: #0067c0;
+  --accent-lo: #4c9be8;
+  --accent-ink: #ffffff;
+  --accent-glow: rgba(0, 103, 192, 0.25);
+  --accent-line: rgba(0, 103, 192, 0.45);
+  --accent-soft: rgba(0, 103, 192, 0.08);
+
+  --danger-bg: #fdecee;
+  --danger-line: rgba(196, 43, 28, 0.35);
+  --danger-text: #b42318;
+  --danger-hover: #fbdcdf;
+
+  --radius-panel: 18px;
+  --radius-group: 12px;
+  --radius-card: 10px;
+
+  --page-bg:
+    radial-gradient(900px 600px at 88% -15%, #d6e6ff, transparent 60%),
+    radial-gradient(800px 520px at -5% 110%, #f6e4f1, transparent 60%),
+    var(--bg);
+  --board-bg: rgba(255, 255, 255, 0.62);
+  --board-border: rgba(255, 255, 255, 0.9);
+  --board-shadow: 0 1px 2px rgba(20, 30, 60, 0.06), 0 18px 50px rgba(30, 50, 100, 0.12);
+  --group-bg: #f7f9fc;
+  --group-border: rgba(20, 30, 50, 0.07);
+  --group-shadow: none;
+  --control-bg: #ffffff;
+  --control-border: rgba(20, 30, 50, 0.07);
+
+  --card-bg: #ffffff;
+  --card-bg-hover: #fbfcfe;
+  --card-bg-sel: #ffffff;
+  --card-border: rgba(20, 30, 50, 0.07);
+  --card-shadow: 0 1px 2px rgba(20, 30, 60, 0.06);
+  --card-lifted: #ffffff;
+  --sel-bar-glow: transparent;
+  --handle-bg: transparent;
+  --handle-border: transparent;
+  --row-border-sel: var(--accent);
+  --count-bg: var(--accent-soft);
+  --tile-shadow: none;
+  --badge-border: transparent;
+  --badge-shadow: none;
+
+  --toggle-border: rgba(20, 30, 50, 0.32);
+  --toggle-bg: #ffffff;
+  --toggle-border-on: var(--accent);
+  --toggle-bg-on: var(--accent);
+  --toggle-label-on: #ffffff;
+  --knob: rgba(20, 30, 50, 0.55);
+  --knob-on: #ffffff;
+  --knob-on-glow: none;
+
+  --wire: #8a96aa;
+  --wire-width: 2;
+  --wire-opacity: 0.45;
+  --wire-width-sel: 2.6;
+  --wire-opacity-sel: 1;
+  --wire-glow: none;
+  --flow-opacity: 0.8;
+  --port-core: #ffffff;
+  --port-ring: rgba(20, 30, 50, 0.25);
+  --port-dot: rgba(20, 30, 50, 0.25);
+  --port-halo: rgba(255, 255, 255, 0.8);
+
+  --track-bg: rgba(20, 30, 50, 0.12);
+  --thumb: var(--accent);
+  --thumb-ring: #ffffff;
+  --meter-bg: rgba(20, 30, 50, 0.1);
+  --meter-fill: linear-gradient(90deg, #0f9d58, #e8b100 70%, #d13438);
+  --grid: rgba(20, 30, 50, 0.06);
+  --grid-zero: rgba(20, 30, 50, 0.22);
+  --eq-fill: #0067c0;
+  --eq-node-fill: #ffffff;
+  --eq-tip-stroke: #ffffff;
+  --ok: #0f7b3f;
+  --toast-bg: #ffffff;
+
+  --logo-bg: #ffffff;
+  --logo-border: rgba(20, 30, 50, 0.12);
+  --logo-wire: #8a96aa;
+  --logo-port: #0067c0;
+  --logo-core: #ffffff;
+}
+
+/* 跟着每一路颜色变的变量：要在带 --src 的元素上重新计算 */
+[data-theme='daylight'],
+[data-theme='daylight'] :is(.source-card, .wire, .inspector) {
+  --card-border-sel: var(--src, var(--accent));
+  --card-shadow-sel: 0 0 0 3px color-mix(in srgb, var(--src, #0067c0) 14%, transparent),
+    0 6px 16px rgba(20, 30, 60, 0.08);
+  --sel-bar: var(--src, var(--accent));
+
+  --tile-bg: color-mix(in srgb, var(--src, #5b6b82) 12%, #ffffff);
+  --tile-border: color-mix(in srgb, var(--src, #5b6b82) 20%, transparent);
+  --tile-text: var(--src, #4a5568);
+
+  --badge-bg: color-mix(in srgb, var(--src, #0067c0) 10%, #ffffff);
+  --badge-ink: var(--src, var(--accent));
+  --flow: var(--src, #5b6b82);
+  --port-ring-on: var(--src, #5b6b82);
+  --port-ring-hot: var(--src, var(--accent));
+  --port-dot-on: var(--src, #5b6b82);
+  --port-dot-hot: var(--src, var(--accent));
+  --port-hot-glow: 0 0 0 5px color-mix(in srgb, var(--src, #0067c0) 16%, transparent);
+}
+
+[data-theme='daylight'] .board {
+  backdrop-filter: blur(24px) saturate(1.4);
+}
+
+[data-theme='daylight'] .port {
+  box-shadow: 0 0 0 3px var(--port-halo), 0 1px 3px rgba(20, 30, 60, 0.2);
+}
+
+[data-theme='daylight'] .port.is-hot {
+  box-shadow: var(--port-hot-glow);
+}
+
+[data-theme='daylight'] .range::-webkit-slider-thumb {
+  box-shadow: 0 0 0 1px rgba(20, 30, 50, 0.15), 0 1px 3px rgba(20, 30, 60, 0.25);
+}
+
+[data-theme='daylight'] .eq-curve {
+  filter: none;
+}
+
+[data-theme='daylight'] .source-list.is-reordering .source-card.is-lifted {
+  box-shadow: 0 16px 34px rgba(20, 30, 60, 0.18);
+}
+
+/* ======================================================================
+ * 调音台：硬件机架，琥珀色指示灯，彩色跳线和金属插孔
+ * ====================================================================== */
+
+[data-theme='console'] {
+  --bg: #121213;
+  --text: #ecebe6;
+  --text-2: rgba(236, 235, 230, 0.62);
+  --text-3: rgba(236, 235, 230, 0.4);
+  --line: rgba(255, 255, 255, 0.06);
+  --line-2: rgba(255, 255, 255, 0.09);
+  --line-3: rgba(255, 255, 255, 0.2);
+  --surface-1: rgba(255, 255, 255, 0.03);
+  --surface-2: rgba(255, 255, 255, 0.05);
+  --surface-3: rgba(255, 255, 255, 0.09);
+
+  --c0: #ff5a4e;
+  --c1: #ffc02e;
+  --c2: #3ec7ff;
+  --c3: #5ee06b;
+  --c4: #c77dff;
+  --c5: #ff8a1f;
+
+  --accent-hi: #ffb35c;
+  --accent: #ff8a1f;
+  --accent-lo: #e25f00;
+  --accent-ink: #1a0d00;
+  --accent-glow: rgba(255, 138, 31, 0.55);
+  --accent-line: rgba(255, 138, 31, 0.55);
+  --accent-soft: rgba(255, 138, 31, 0.1);
+
+  --radius-panel: 8px;
+  --radius-group: 6px;
+  --radius-card: 5px;
+  --mono: 'Cascadia Mono', 'JetBrains Mono', Consolas, 'SFMono-Regular', Menlo, var(--font);
+
+  --page-bg: repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.012) 0 1px, transparent 1px 3px), var(--bg);
+  --board-bg: linear-gradient(180deg, #232325, #1b1b1d);
+  --board-border: #303033;
+  --board-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), inset 0 -2px 0 rgba(0, 0, 0, 0.5),
+    0 24px 60px rgba(0, 0, 0, 0.6);
+  --group-bg: #161617;
+  --group-border: #2b2b2e;
+  --group-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.5);
+  --control-bg: #1d1d1f;
+  --control-border: #2e2e31;
+
+  --card-bg: linear-gradient(180deg, #29292c, #222224);
+  --card-bg-hover: linear-gradient(180deg, #2d2d30, #252528);
+  --card-bg-sel: linear-gradient(180deg, #313134, #28282b);
+  --card-border: #343437;
+  --card-border-sel: #4a4a4e;
+  --card-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 2px 0 rgba(0, 0, 0, 0.4);
+  --card-shadow-sel: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 2px 0 rgba(0, 0, 0, 0.4);
+  --card-lifted: #333336;
+  --sel-bar: var(--accent);
+  --sel-bar-glow: var(--accent);
+  --handle-bg: #19191a;
+  --handle-border: #333336;
+  --row-border-sel: var(--accent-line);
+  --count-bg: #0d0d0e;
+
+  --tile-bg: #0c0c0d;
+  --tile-border: #333336;
+  --tile-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.8);
+
+  --badge-bg: #0c0c0d;
+  --badge-ink: #5ee06b;
+  --badge-border: #2f3a30;
+  --badge-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.7);
+
+  --toggle-border: #3a3a3d;
+  --toggle-bg: #0e0e0f;
+  --toggle-border-on: #3a3a3d;
+  --toggle-bg-on: #0e0e0f;
+  --toggle-label-on: var(--accent-hi);
+  --knob: #4b4b4f;
+  --knob-on: var(--accent);
+  --knob-on-glow: 0 0 10px var(--accent-glow), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+
+  --wire: #9a9a9a;
+  --wire-width: 4;
+  --wire-opacity: 0.85;
+  --wire-width-sel: 5;
+  --wire-opacity-sel: 1;
+  --flow: #ffffff;
+  --flow-opacity: 0.45;
+  --port-size: 22px;
+  --port-core: #050505;
+  --port-ring: #6d6d70;
+  --port-ring-on: #a7a7ab;
+  --port-ring-hot: #d8d8dc;
+  --port-dot: #050505;
+  --port-halo: #2a2a2d;
+
+  --track-bg: #0b0b0c;
+  --thumb: linear-gradient(180deg, #e8e8e8, #8d8d8d);
+  --thumb-ring: #2a2a2a;
+  --meter-bg: #0b0b0c;
+  --meter-fill: linear-gradient(90deg, #45d65a, #45d65a 60%, #ffc02e 75%, #ff3b30);
+  --grid: rgba(255, 255, 255, 0.05);
+  --grid-zero: rgba(255, 138, 31, 0.3);
+  --eq-fill: #ff8a1f;
+  --eq-node-fill: #0c0c0d;
+  --eq-tip-stroke: #0c0c0d;
+  --ok: #5ee06b;
+  --danger-bg: #3a1513;
+  --danger-line: #6b2a25;
+  --danger-text: #ffb4a8;
+  --danger-hover: #4a1a17;
+  --toast-bg: #2a1210;
+
+  --logo-bg: #1d1d1f;
+  --logo-border: #3a3a3d;
+  --logo-wire: #ff5a4e;
+  --logo-port: #a7a7ab;
+  --logo-core: #050505;
+}
+
+/* 跟着每一路颜色变的变量：要在带 --src 的元素上重新计算 */
+[data-theme='console'],
+[data-theme='console'] :is(.source-card, .wire, .inspector) {
+  --tile-text: var(--src, var(--accent));
+  --wire-glow: drop-shadow(0 0 5px var(--src, var(--accent)));
+  --port-dot-on: var(--src, #a7a7ab);
+  --port-dot-hot: var(--src, var(--accent));
+  --port-hot-glow: 0 0 10px var(--src, var(--accent-glow));
+}
+
+/* 面板四角的螺丝 */
+[data-theme='console'] .board::after {
+  content: '';
+  position: absolute;
+  inset: 10px;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 6px 6px, #4a4a4d 0 3.5px, #1a1a1b 4px 5px, transparent 5.5px),
+    radial-gradient(circle at calc(100% - 6px) 6px, #4a4a4d 0 3.5px, #1a1a1b 4px 5px, transparent 5.5px),
+    radial-gradient(circle at 6px calc(100% - 6px), #4a4a4d 0 3.5px, #1a1a1b 4px 5px, transparent 5.5px),
+    radial-gradient(circle at calc(100% - 6px) calc(100% - 6px), #4a4a4d 0 3.5px, #1a1a1b 4px 5px, transparent 5.5px);
+}
+
+[data-theme='console'] .eyebrow,
+[data-theme='console'] .tile,
+[data-theme='console'] .control-value,
+[data-theme='console'] .device-count,
+[data-theme='console'] .live-badge,
+[data-theme='console'] .toggle-label,
+[data-theme='console'] .engine-chip,
+[data-theme='console'] .eq-label {
+  font-family: var(--mono);
+}
+
+[data-theme='console'] .eyebrow {
+  color: var(--accent);
+}
+
+[data-theme='console'] .board-title {
+  letter-spacing: 1px;
+}
+
+[data-theme='console'] .tile {
+  border-radius: 3px;
+  text-shadow: 0 0 8px currentColor;
+}
+
+[data-theme='console'] .live-badge {
+  border-radius: 3px;
+  text-shadow: 0 0 6px rgba(94, 224, 107, 0.6);
+}
+
+[data-theme='console'] .toggle,
+[data-theme='console'] .chip,
+[data-theme='console'] .notice-action,
+[data-theme='console'] .theme-picker,
+[data-theme='console'] .theme-option,
+[data-theme='console'] .engine-chip,
+[data-theme='console'] .danger-pill {
+  border-radius: 4px;
+}
+
+[data-theme='console'] .toggle-knob {
+  border-radius: 2px;
+}
+
+[data-theme='console'] .source-card.is-selected::before {
+  left: 4px;
+  width: 6px;
+  height: 6px;
+  margin-top: -3px;
+  border-radius: 50%;
+}
+
+[data-theme='console'] .port {
+  border-width: 2px;
+  background: radial-gradient(circle, var(--port-dot) 0 3.5px, var(--port-core) 4px 6px, #3a3a3c 6.5px);
+  box-shadow: 0 0 0 3px var(--port-halo), 0 0 0 4px #0a0a0a, 0 3px 6px rgba(0, 0, 0, 0.6);
+}
+
+[data-theme='console'] .port.is-linked {
+  background: radial-gradient(circle, var(--port-dot-on) 0 4px, var(--port-core) 4.5px 6px, #3a3a3c 6.5px);
+}
+
+[data-theme='console'] .port.is-hot {
+  background: radial-gradient(circle, var(--port-dot-hot) 0 4px, var(--port-core) 4.5px 6px, #3a3a3c 6.5px);
+  box-shadow: 0 0 0 3px var(--port-halo), 0 0 0 4px #0a0a0a, var(--port-hot-glow);
+}
+
+/* 跳线：粗线，底下压一道阴影 */
+[data-theme='console'] .wire-base {
+  filter: drop-shadow(0 3px 2px rgba(0, 0, 0, 0.7));
+}
+
+[data-theme='console'] .wire.is-selected .wire-flow {
+  stroke: #ffffff;
+  stroke-width: 2.4;
+}
+
+[data-theme='console'] .wire-flow {
+  stroke-width: 2;
+}
+
+/* 推子 */
+[data-theme='console'] .range::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 1px;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.9);
+}
+
+[data-theme='console'] .range::-webkit-slider-thumb {
+  width: 14px;
+  height: 22px;
+  margin-top: -8px;
+  border-radius: 2px;
+  border: 1px solid #222;
+  background:
+    linear-gradient(180deg, transparent 45%, #222 45% 55%, transparent 55%),
+    linear-gradient(180deg, #e8e8e8, #8d8d8d);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
+}
+
+[data-theme='console'] .eq svg {
+  border-radius: 4px;
+  background: #0c0c0d;
+  box-shadow: inset 0 1px 6px rgba(0, 0, 0, 0.9);
+}
+
+[data-theme='console'] .level-bar {
+  width: 72px;
+  height: 10px;
+}
+
+/* ======================================================================
+ * 极简：纯黑白，没有玻璃和光效；选中项整张卡片反白
+ * ====================================================================== */
+
+[data-theme='mono'] {
+  --bg: #0a0a0a;
+  --text: #f5f5f5;
+  --text-2: rgba(245, 245, 245, 0.6);
+  --text-3: rgba(245, 245, 245, 0.38);
+  --line: rgba(255, 255, 255, 0.07);
+  --line-2: rgba(255, 255, 255, 0.1);
+  --line-3: rgba(255, 255, 255, 0.24);
+  --surface-1: #141414;
+  --surface-2: #1a1a1a;
+  --surface-3: #222222;
+
+  --accent-hi: #ffffff;
+  --accent: #f5f5f5;
+  --accent-lo: #ffffff;
+  --accent-ink: #0a0a0a;
+  --accent-glow: transparent;
+  --accent-line: rgba(255, 255, 255, 0.6);
+  --accent-soft: rgba(255, 255, 255, 0.08);
+
+  --radius-panel: 0px;
+  --radius-group: 20px;
+  --radius-card: 16px;
+
+  --page-bg: var(--bg);
+  --board-bg: transparent;
+  --board-border: transparent;
+  --board-shadow: none;
+  --group-bg: #121212;
+  --group-border: transparent;
+  --group-shadow: none;
+  --control-bg: transparent;
+  --control-border: transparent;
+
+  --card-bg: #121212;
+  --card-bg-hover: #181818;
+  --card-bg-sel: #f5f5f5;
+  --card-border: transparent;
+  --card-border-sel: transparent;
+  --card-shadow: none;
+  --card-shadow-sel: none;
+  --card-lifted: #1e1e1e;
+  --sel-bar: transparent;
+  --sel-bar-glow: transparent;
+  --handle-bg: transparent;
+  --handle-border: transparent;
+  --row-border-sel: rgba(255, 255, 255, 0.7);
+  --count-bg: #262626;
+
+  --tile-bg: #1e1e1e;
+  --tile-border: transparent;
+  --tile-shadow: none;
+  --tile-text: #f5f5f5;
+
+  --badge-bg: transparent;
+  --badge-ink: var(--text-2);
+  --badge-border: var(--line-3);
+  --badge-shadow: none;
+
+  --toggle-border: transparent;
+  --toggle-bg: #2a2a2a;
+  --toggle-border-on: transparent;
+  --toggle-bg-on: #f5f5f5;
+  --toggle-label-on: transparent;
+  --knob: #8a8a8a;
+  --knob-on: #0a0a0a;
+  --knob-on-glow: none;
+
+  --wire: #ffffff;
+  --wire-width: 1;
+  --wire-opacity: 0.22;
+  --wire-width-sel: 1.6;
+  --wire-opacity-sel: 1;
+  --wire-glow: none;
+  --flow: #ffffff;
+  --flow-opacity: 0.5;
+  --port-size: 12px;
+  --port-core: #0a0a0a;
+  --port-ring: rgba(255, 255, 255, 0.3);
+  --port-ring-on: rgba(255, 255, 255, 0.7);
+  --port-ring-hot: #ffffff;
+  --port-dot: transparent;
+  --port-dot-on: transparent;
+  --port-dot-hot: #ffffff;
+  --port-halo: transparent;
+  --port-hot-glow: none;
+
+  --track-bg: #2a2a2a;
+  --thumb: #ffffff;
+  --thumb-ring: #ffffff;
+  --meter-bg: #262626;
+  --meter-fill: #f5f5f5;
+  --grid: rgba(255, 255, 255, 0.05);
+  --grid-zero: rgba(255, 255, 255, 0.2);
+  --eq-fill: #ffffff;
+  --eq-node-fill: #0a0a0a;
+  --eq-tip-stroke: #0a0a0a;
+  --ok: #b6f09c;
+  --toast-bg: #1a1a1a;
+
+  --logo-bg: #f5f5f5;
+  --logo-border: transparent;
+  --logo-wire: #0a0a0a;
+  --logo-port: #0a0a0a;
+  --logo-core: #f5f5f5;
+}
+
+/* 反白的选中卡片里，文字和小部件都要换成深色 */
+[data-theme='mono'] .source-card.is-selected {
+  --text: #0a0a0a;
+  --text-2: rgba(10, 10, 10, 0.62);
+  --text-3: rgba(10, 10, 10, 0.4);
+  --line-3: rgba(10, 10, 10, 0.25);
+  --tile-bg: #0a0a0a;
+  --tile-text: #f5f5f5;
+  --toggle-bg: #d4d4d4;
+  --toggle-bg-on: #0a0a0a;
+  --knob-on: #f5f5f5;
+  --port-core: #f5f5f5;
+  --port-ring-hot: #0a0a0a;
+  --port-dot-hot: #0a0a0a;
+  --badge-ink: rgba(10, 10, 10, 0.62);
+  --badge-border: rgba(10, 10, 10, 0.25);
+}
+
+[data-theme='mono'] .board {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+[data-theme='mono'] .board-title {
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+[data-theme='mono'] .eyebrow {
+  letter-spacing: 3px;
+}
+
+[data-theme='mono'] .tile {
+  border-radius: 50%;
+}
+
+[data-theme='mono'] .toggle {
+  width: 40px;
+  height: 22px;
+}
+
+[data-theme='mono'] .toggle-knob {
+  top: 3px;
+  left: 3px;
+}
+
+[data-theme='mono'] .toggle.is-on .toggle-knob {
+  left: calc(100% - 19px);
+}
+
+[data-theme='mono'] .toggle-label {
+  display: none;
+}
+
+[data-theme='mono'] .port {
+  border-width: 1.5px;
+  box-shadow: none;
+}
+
+[data-theme='mono'] .control {
+  padding: 4px 2px 10px;
+  border-radius: 0;
+  border-bottom: 1px solid var(--line);
+}
+
+[data-theme='mono'] .control:last-child {
+  border-bottom: 0;
+}
+
+[data-theme='mono'] .range::-webkit-slider-runnable-track {
+  height: 2px;
+  background: linear-gradient(90deg, #fff var(--val), var(--track-bg) var(--val));
+}
+
+[data-theme='mono'] .range::-webkit-slider-thumb {
+  width: 14px;
+  height: 14px;
+  margin-top: -6px;
+  border: 0;
+  box-shadow: none;
+}
+
+[data-theme='mono'] .eq-curve {
+  stroke-width: 1.5;
+  filter: none;
+}
+
+[data-theme='mono'] .level-bar {
+  -webkit-mask: none;
+  mask: none;
+  height: 3px;
+  border-radius: 2px;
+}
+
+[data-theme='mono'] .danger-pill {
+  border-radius: 17px;
+  background: transparent;
+  border-color: var(--line-3);
+  color: var(--text-2);
+}
+
+[data-theme='mono'] .chip.is-on {
+  background: #f5f5f5;
+  border-color: #f5f5f5;
+  color: #0a0a0a;
+}

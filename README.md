@@ -24,6 +24,7 @@
 | 实时电平 | ✅ |
 | 每个应用单独的声音曲线（十段均衡） | ✅ 需要先装免费的虚拟声卡 VB-CABLE（见下文） |
 | 关窗口后在托盘里继续运行、开机启动 | ✅ |
+| 五套界面主题：墨玉、霓虹、晴空（浅色）、调音台、极简 | ✅ 右上角色块一键切换，会记住 |
 
 几点说明：
 
@@ -95,6 +96,7 @@ src/                    界面（React + TypeScript）
   engine/               音频引擎抽象；MockAudioEngine（浏览器）/ TauriAudioEngine（安装版）；状态→引擎增量同步
   state/                reducer、系统快照合并、本地设置的保存与校验
   model/ geometry/      类型、均衡预设、缩写；连线与曲线的几何计算
+  lib/theme.ts          主题列表与切换；styles/themes.css 里是各主题的配色变量
   hooks/ components/    端口测量、拖线、排序、电平；各个界面组件
 src-tauri/              桌面外壳（Tauri 2）
   src/worker.rs         音频线程：处理界面指令，定时推送电平和系统变化

@@ -3,14 +3,9 @@
 .board {
   position: relative;
   border-radius: var(--radius-panel);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background:
-    radial-gradient(80% 120% at 88% 0%, rgba(40, 96, 82, 0.42), transparent 62%),
-    radial-gradient(70% 90% at 0% 100%, rgba(18, 48, 42, 0.55), transparent 70%),
-    linear-gradient(180deg, #0f1c1a, #0a1211);
-  box-shadow:
-    0 40px 90px rgba(0, 0, 0, 0.55),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--board-border);
+  background: var(--board-bg);
+  box-shadow: var(--board-shadow);
   padding: 26px 34px 34px;
 }
 
@@ -121,20 +116,22 @@
   height: 58px;
   padding: 0 22px 0 8px;
   border-radius: var(--radius-card);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid var(--card-border);
+  background: var(--card-bg);
+  box-shadow: var(--card-shadow);
+  color: var(--text);
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
 }
 
 .source-card:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--card-bg-hover);
 }
 
 .source-card.is-selected {
-  border-color: rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.08);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  border-color: var(--card-border-sel);
+  background: var(--card-bg-sel);
+  box-shadow: var(--card-shadow-sel);
 }
 
 /* 选中卡片左缘的亮条 */
@@ -147,8 +144,8 @@
   height: 28px;
   margin-top: -14px;
   border-radius: 2px;
-  background: #f4f1ea;
-  box-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+  background: var(--sel-bar);
+  box-shadow: 0 0 8px var(--sel-bar-glow);
 }
 
 .source-card.is-off .tile,
@@ -163,7 +160,7 @@
 .source-list.is-reordering .source-card.is-lifted {
   z-index: 3;
   transition: none;
-  background: #222b29;
+  background: var(--card-lifted);
   box-shadow: 0 16px 34px rgba(0, 0, 0, 0.5);
 }
 
@@ -175,8 +172,8 @@
   height: 40px;
   padding: 0;
   border-radius: 7px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--handle-border);
+  background: var(--handle-bg);
   color: var(--text-3);
   cursor: grab;
   touch-action: none;
@@ -235,13 +232,12 @@
   height: 20px;
   padding: 0 7px;
   border-radius: 4px;
-  background: linear-gradient(180deg, #f8e2a3, #d6aa55);
-  color: var(--gold-ink);
+  border: 1px solid var(--badge-border);
+  background: var(--badge-bg);
+  color: var(--badge-ink);
   font-size: 11px;
   font-weight: 800;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.55),
-    0 0 12px rgba(227, 189, 107, 0.18);
+  box-shadow: var(--badge-shadow);
 }
 
 .live-bars {
@@ -275,9 +271,9 @@
 .inspector {
   position: relative;
   border-radius: var(--radius-group);
-  border: 1px solid var(--line-2);
-  background: rgba(255, 255, 255, 0.03);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--group-border);
+  background: var(--group-bg);
+  box-shadow: var(--group-shadow);
   padding: 16px 14px 14px;
 }
 
@@ -342,20 +338,20 @@
 }
 
 .device-row.is-target {
-  border-color: rgba(255, 255, 255, 0.3);
+  border-color: var(--row-border-sel);
   background: var(--surface-3);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .device-row.is-drop {
-  border-color: rgba(240, 214, 150, 0.7);
-  background: rgba(240, 214, 150, 0.08);
-  box-shadow: 0 0 0 3px rgba(240, 214, 150, 0.12);
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
+  box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
 /* 端口压在分组卡片的左边框外侧一点 */
 .port--in {
-  left: -30px;
+  left: calc(-21px - var(--port-size) / 2);
 }
 
 .device-text {
@@ -389,7 +385,7 @@
   height: 20px;
   padding: 0 5px;
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--count-bg);
   font-size: 11px;
   font-weight: 800;
   color: var(--text-2);
@@ -413,35 +409,35 @@
 
 .wire-base {
   fill: none;
-  stroke: var(--wire);
-  stroke-width: 1.6;
-  stroke-opacity: 0.22;
+  stroke: var(--src, var(--wire));
+  stroke-width: var(--wire-width);
+  stroke-opacity: var(--wire-opacity);
   stroke-linecap: round;
   transition: stroke-opacity 0.2s;
 }
 
 .wire.is-selected .wire-base {
-  stroke-width: 2.2;
-  stroke-opacity: 0.9;
-  filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.35));
+  stroke-width: var(--wire-width-sel);
+  stroke-opacity: var(--wire-opacity-sel);
+  filter: var(--wire-glow);
 }
 
 /* 光点沿线从应用流向设备 */
 .wire-flow {
   fill: none;
-  stroke: #ffffff;
+  stroke: var(--flow);
   stroke-width: 3;
   stroke-linecap: round;
   stroke-dasharray: 0.1 16;
-  stroke-opacity: 0.35;
+  stroke-opacity: var(--flow-opacity);
   animation: wire-flow 1.1s linear infinite;
 }
 
 .wire.is-selected .wire-flow {
-  stroke: var(--gold-hi);
+  stroke: var(--src, var(--accent-hi));
   stroke-width: 3.6;
   stroke-opacity: 1;
-  filter: drop-shadow(0 0 4px var(--gold-glow));
+  filter: drop-shadow(0 0 4px var(--accent-glow));
 }
 
 @keyframes wire-flow {
@@ -467,10 +463,10 @@
 }
 
 .wire.is-pending.is-snapped .wire-base {
-  stroke: var(--gold-hi);
+  stroke: var(--src, var(--accent-hi));
   stroke-opacity: 1;
   stroke-dasharray: none;
-  filter: drop-shadow(0 0 5px var(--gold-glow));
+  filter: drop-shadow(0 0 5px var(--accent-glow));
 }
 
 .wire-tip {
@@ -581,8 +577,8 @@
   height: 16px;
   padding: 0 5px;
   border-radius: 4px;
-  border: 1px solid rgba(240, 214, 150, 0.45);
-  color: var(--gold-hi);
+  border: 1px solid var(--accent-line);
+  color: var(--accent-hi);
   font-size: 10px;
   font-weight: 800;
   line-height: 14px;
@@ -623,7 +619,7 @@
   padding: 10px 16px;
   border-radius: 10px;
   border: 1px solid var(--danger-line);
-  background: rgba(40, 14, 18, 0.94);
+  background: var(--toast-bg);
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
   color: var(--danger-text);
   font-size: 13px;

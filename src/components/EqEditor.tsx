@@ -93,9 +93,9 @@ export function EqEditor({ gains, onChange }: Props) {
       >
         <defs>
           <linearGradient id={fillId} x1="0" y1={BOX.top} x2="0" y2={BOX.bottom} gradientUnits="userSpaceOnUse">
-            <stop offset="0" stopColor="#f3d68f" stopOpacity="0.32" />
-            <stop offset="0.5" stopColor="#f3d68f" stopOpacity="0.04" />
-            <stop offset="1" stopColor="#f3d68f" stopOpacity="0.32" />
+            <stop offset="0" className="eq-stop" stopOpacity="0.32" />
+            <stop offset="0.5" className="eq-stop" stopOpacity="0.04" />
+            <stop offset="1" className="eq-stop" stopOpacity="0.32" />
           </linearGradient>
         </defs>
 

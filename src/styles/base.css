@@ -14,14 +14,111 @@
   --surface-2: rgba(255, 255, 255, 0.05);
   --surface-3: rgba(255, 255, 255, 0.085);
 
-  --gold-hi: #f9e3a6;
-  --gold: #e3bd6b;
-  --gold-lo: #c99a45;
-  --gold-ink: #3b2a0b;
-  --gold-glow: rgba(240, 210, 140, 0.35);
+  --accent-hi: #f9e3a6;
+  --accent: #e3bd6b;
+  --accent-lo: #c99a45;
+  --accent-ink: #3b2a0b;
+  --accent-glow: rgba(240, 210, 140, 0.35);
 
+  --accent-line: rgba(240, 214, 150, 0.55);
+  --accent-soft: rgba(240, 214, 150, 0.1);
+
+  /* 页面与面板 */
+  --page-bg:
+    radial-gradient(1100px 620px at 78% -12%, rgba(32, 78, 66, 0.38), transparent 62%),
+    radial-gradient(900px 520px at -10% 110%, rgba(22, 52, 46, 0.4), transparent 60%),
+    var(--bg);
+  --board-bg:
+    radial-gradient(80% 120% at 88% 0%, rgba(40, 96, 82, 0.42), transparent 62%),
+    radial-gradient(70% 90% at 0% 100%, rgba(18, 48, 42, 0.55), transparent 70%),
+    linear-gradient(180deg, #0f1c1a, #0a1211);
+  --board-border: rgba(255, 255, 255, 0.12);
+  --board-shadow: 0 40px 90px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --group-bg: rgba(255, 255, 255, 0.03);
+  --group-border: var(--line-2);
+  --group-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  --control-bg: rgba(0, 0, 0, 0.14);
+  --control-border: var(--line);
+
+  /* 应用卡片 */
+  --card-bg: rgba(255, 255, 255, 0.035);
+  --card-bg-hover: rgba(255, 255, 255, 0.05);
+  --card-bg-sel: rgba(255, 255, 255, 0.08);
+  --card-border: rgba(255, 255, 255, 0.05);
+  --card-border-sel: rgba(255, 255, 255, 0.1);
+  --card-shadow: none;
+  --card-shadow-sel: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  --card-lifted: #222b29;
+  --sel-bar: #f4f1ea;
+  --sel-bar-glow: rgba(255, 255, 255, 0.5);
+  --handle-bg: rgba(255, 255, 255, 0.04);
+  --handle-border: rgba(255, 255, 255, 0.06);
+  --row-border-sel: rgba(255, 255, 255, 0.3);
+  --count-bg: rgba(255, 255, 255, 0.08);
+
+  /* 缩写方块 */
+  --tile-bg: linear-gradient(180deg, #3a3e3c, #262a29);
+  --tile-border: rgba(255, 255, 255, 0.08);
+  --tile-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  --tile-text: #f4f2ec;
+
+  /* 「播放中」徽标 */
+  --badge-bg: linear-gradient(180deg, #f8e2a3, #d6aa55);
+  --badge-ink: var(--accent-ink);
+  --badge-border: transparent;
+  --badge-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55), 0 0 12px rgba(227, 189, 107, 0.18);
+
+  /* 开关 */
+  --toggle-border: rgba(255, 255, 255, 0.12);
+  --toggle-bg: rgba(255, 255, 255, 0.03);
+  --toggle-border-on: rgba(240, 214, 150, 0.5);
+  --toggle-bg-on: rgba(240, 214, 150, 0.08);
+  --toggle-label-on: var(--text-2);
+  --knob: #6c6f6d;
+  --knob-on: #f6e3b4;
+  --knob-on-glow: 0 0 10px rgba(246, 227, 180, 0.55);
+
+  /* 连线与端口 */
   --wire: #e6e2d8;
+  --wire-width: 1.6;
+  --wire-opacity: 0.22;
+  --wire-width-sel: 2.2;
+  --wire-opacity-sel: 0.9;
+  --wire-glow: drop-shadow(0 0 4px rgba(255, 255, 255, 0.35));
+  --flow: #ffffff;
+  --flow-opacity: 0.35;
   --port-core: #0c1110;
+  --port-size: 18px;
+  --port-ring: rgba(255, 255, 255, 0.28);
+  --port-ring-on: rgba(255, 255, 255, 0.55);
+  --port-ring-hot: rgba(255, 255, 255, 0.92);
+  --port-dot: rgba(255, 255, 255, 0.35);
+  --port-dot-on: #f4f2ec;
+  --port-dot-hot: #ffffff;
+  --port-halo: rgba(255, 255, 255, 0.04);
+  --port-hot-glow: 0 0 14px rgba(255, 255, 255, 0.45);
+
+  /* 滑条、电平、曲线 */
+  --track-bg: rgba(255, 255, 255, 0.1);
+  --thumb: #f6e3b4;
+  --thumb-ring: #1a201e;
+  --meter-bg: rgba(255, 255, 255, 0.1);
+  --meter-fill: linear-gradient(90deg, #8fd6b0, #f0d48a 70%, #ef8a6c);
+  --grid: rgba(255, 255, 255, 0.06);
+  --grid-zero: rgba(255, 255, 255, 0.18);
+  --eq-fill: #f3d68f;
+  --eq-node-fill: #121816;
+  --eq-tip-stroke: #0c1312;
+  --ok: #8fd6b0;
+  --toast-bg: rgba(40, 14, 18, 0.94);
+  --danger-hover: rgba(118, 28, 40, 0.65);
+
+  /* 标志 */
+  --logo-bg: #141b19;
+  --logo-border: rgba(255, 255, 255, 0.14);
+  --logo-wire: #e6e2d8;
+  --logo-port: #f3e1ae;
+  --logo-core: #0c1110;
 
   --danger-bg: rgba(88, 22, 30, 0.55);
   --danger-line: rgba(214, 92, 104, 0.5);
@@ -48,10 +145,8 @@ body {
 
 body {
   min-height: 100vh;
-  background:
-    radial-gradient(1100px 620px at 78% -12%, rgba(32, 78, 66, 0.38), transparent 62%),
-    radial-gradient(900px 520px at -10% 110%, rgba(22, 52, 46, 0.4), transparent 60%),
-    var(--bg);
+  background: var(--page-bg);
+  background-attachment: fixed;
   color: var(--text);
   font-family: var(--font);
   font-size: 14px;
@@ -71,7 +166,7 @@ p {
 }
 
 :focus-visible {
-  outline: 2px solid var(--gold-hi);
+  outline: 2px solid var(--accent-hi);
   outline-offset: 2px;
 }
 
@@ -140,8 +235,8 @@ p {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: var(--gold);
-  box-shadow: 0 0 8px var(--gold-glow);
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent-glow);
 }
 
 /* ---------- 通用小件 ---------- */
@@ -162,13 +257,13 @@ p {
   width: 38px;
   height: 38px;
   border-radius: 10px;
-  background: linear-gradient(180deg, #3a3e3c, #262a29);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  background: var(--tile-bg);
+  border: 1px solid var(--tile-border);
+  box-shadow: var(--tile-shadow);
   font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.4px;
-  color: #f4f2ec;
+  color: var(--tile-text);
 }
 
 .tile--sm {
@@ -193,8 +288,8 @@ p {
 }
 
 .danger-pill:hover {
-  background: rgba(118, 28, 40, 0.65);
-  border-color: rgba(232, 112, 124, 0.7);
+  background: var(--danger-hover);
+  border-color: var(--danger-line);
 }
 
 .chip {
@@ -216,9 +311,9 @@ p {
 }
 
 .chip.is-on {
-  border-color: rgba(240, 214, 150, 0.55);
-  background: rgba(240, 214, 150, 0.1);
-  color: var(--gold-hi);
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
+  color: var(--accent-hi);
 }
 
 /* ---------- 胶囊开关 ---------- */
@@ -229,8 +324,8 @@ p {
   width: 66px;
   height: 26px;
   border-radius: 13px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--toggle-border);
+  background: var(--toggle-bg);
   cursor: pointer;
   transition: background 0.2s, border-color 0.2s;
 }
@@ -253,24 +348,24 @@ p {
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: #6c6f6d;
+  background: var(--knob);
   transition: left 0.2s, background 0.2s, box-shadow 0.2s;
 }
 
 .toggle.is-on {
-  border-color: rgba(240, 214, 150, 0.5);
-  background: rgba(240, 214, 150, 0.08);
+  border-color: var(--toggle-border-on);
+  background: var(--toggle-bg-on);
 }
 
 .toggle.is-on .toggle-label {
   right: 30px;
-  color: var(--text-2);
+  color: var(--toggle-label-on);
 }
 
 .toggle.is-on .toggle-knob {
   left: calc(100% - 20px);
-  background: #f6e3b4;
-  box-shadow: 0 0 10px rgba(246, 227, 180, 0.55);
+  background: var(--knob-on);
+  box-shadow: var(--knob-on-glow);
 }
 
 /* ---------- 连线端口 ---------- */
@@ -279,25 +374,25 @@ p {
   position: absolute;
   top: 50%;
   z-index: 2;
-  width: 18px;
-  height: 18px;
-  margin-top: -9px;
+  width: var(--port-size);
+  height: var(--port-size);
+  margin-top: calc(var(--port-size) / -2);
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.35) 0 2.6px, var(--port-core) 3.2px);
-  border: 1.5px solid rgba(255, 255, 255, 0.28);
-  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.04), 0 2px 6px rgba(0, 0, 0, 0.5);
+  background: radial-gradient(circle, var(--port-dot) 0 2.6px, var(--port-core) 3.2px);
+  border: 1.5px solid var(--port-ring);
+  box-shadow: 0 0 0 3px var(--port-halo), 0 2px 6px rgba(0, 0, 0, 0.5);
   transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
 }
 
 .port.is-linked {
-  background: radial-gradient(circle, #f4f2ec 0 2.6px, var(--port-core) 3.2px);
-  border-color: rgba(255, 255, 255, 0.55);
+  background: radial-gradient(circle, var(--port-dot-on) 0 2.6px, var(--port-core) 3.2px);
+  border-color: var(--port-ring-on);
 }
 
 .port.is-hot {
-  background: radial-gradient(circle, #ffffff 0 2.8px, var(--port-core) 3.4px);
-  border-color: rgba(255, 255, 255, 0.92);
-  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.07), 0 0 14px rgba(255, 255, 255, 0.45);
+  background: radial-gradient(circle, var(--port-dot-hot) 0 2.8px, var(--port-core) 3.4px);
+  border-color: var(--port-ring-hot);
+  box-shadow: 0 0 0 3px var(--port-halo), var(--port-hot-glow);
 }
 
 .port--out {
@@ -316,7 +411,7 @@ p {
 
 .port--out:hover {
   transform: scale(1.15);
-  border-color: rgba(255, 255, 255, 0.9);
+  border-color: var(--port-ring-hot);
 }
 
 /* ---------- 音量滑条 ---------- */
@@ -335,13 +430,13 @@ p {
 .range::-webkit-slider-runnable-track {
   height: 6px;
   border-radius: 3px;
-  background: linear-gradient(90deg, var(--gold-lo), var(--gold-hi) var(--val), rgba(255, 255, 255, 0.1) var(--val));
+  background: linear-gradient(90deg, var(--accent-lo), var(--accent-hi) var(--val), var(--track-bg) var(--val));
 }
 
 .range::-moz-range-track {
   height: 6px;
   border-radius: 3px;
-  background: linear-gradient(90deg, var(--gold-lo), var(--gold-hi) var(--val), rgba(255, 255, 255, 0.1) var(--val));
+  background: linear-gradient(90deg, var(--accent-lo), var(--accent-hi) var(--val), var(--track-bg) var(--val));
 }
 
 .range::-webkit-slider-thumb {
@@ -350,8 +445,8 @@ p {
   height: 16px;
   margin-top: -5px;
   border-radius: 50%;
-  background: #f6e3b4;
-  border: 3px solid #1a201e;
+  background: var(--thumb);
+  border: 3px solid var(--thumb-ring);
   box-shadow: 0 0 0 1px rgba(246, 227, 180, 0.6), 0 0 10px rgba(246, 227, 180, 0.4);
 }
 
@@ -359,8 +454,8 @@ p {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: #f6e3b4;
-  border: 3px solid #1a201e;
+  background: var(--thumb);
+  border: 3px solid var(--thumb-ring);
   box-shadow: 0 0 0 1px rgba(246, 227, 180, 0.6), 0 0 10px rgba(246, 227, 180, 0.4);
 }
 
@@ -395,8 +490,8 @@ p {
 }
 
 .engine-chip.is-native i {
-  background: #8fd6b0;
-  box-shadow: 0 0 8px rgba(143, 214, 176, 0.55);
+  background: var(--ok);
+  box-shadow: 0 0 8px var(--ok);
 }
 
 .autostart {
@@ -406,4 +501,77 @@ p {
   font-size: 12px;
   font-weight: 700;
   color: var(--text-2);
+}
+
+/* ---------- 标志 ---------- */
+
+.logo-bg {
+  fill: var(--logo-bg);
+  stroke: var(--logo-border);
+}
+
+.logo-wire {
+  stroke: var(--logo-wire);
+}
+
+.logo-port {
+  fill: var(--logo-core);
+  stroke: var(--logo-port);
+}
+
+.logo-dot {
+  fill: var(--logo-port);
+}
+
+.eq-stop {
+  stop-color: var(--eq-fill);
+}
+
+/* ---------- 主题切换 ---------- */
+
+.theme-picker {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  height: 30px;
+  padding: 2px;
+  border-radius: 15px;
+  border: 1px solid var(--line-2);
+  background: var(--surface-1);
+}
+
+.theme-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  padding: 0 6px 0 4px;
+  border: 0;
+  border-radius: 12px;
+  background: none;
+  color: var(--text-3);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.theme-option:hover {
+  color: var(--text);
+}
+
+.theme-option.is-on {
+  background: var(--surface-3);
+  color: var(--text);
+}
+
+.theme-swatch {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px var(--line-3);
+}
+
+/* 没选中的只露色块 */
+.theme-option:not(.is-on) .theme-name {
+  display: none;
 }

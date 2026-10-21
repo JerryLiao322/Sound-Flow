@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef, type PointerEvent } from 'react';
 import { useReorder } from '../hooks/useReorder';
 import { cx } from '../lib/cx';
+import { hueStyle } from '../lib/theme';
 import type { AudioSource, OutputDevice } from '../model/types';
 import { GripIcon } from './Icons';
 import { LiveBadge } from './Meters';
@@ -66,7 +67,7 @@ export function SourceList(props: Props) {
               !s.enabled && 'is-off',
               draggingIndex === i && 'is-lifted',
             )}
-            style={offset ? { transform: `translateY(${offset}px)` } : undefined}
+            style={offset ? { ...hueStyle(i), transform: `translateY(${offset}px)` } : hueStyle(i)}
             onClick={() => onSelect(s.id)}
           >
             <button

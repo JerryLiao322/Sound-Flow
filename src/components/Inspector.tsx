@@ -4,6 +4,7 @@ import { EQ_PRESETS, presetLabel } from '../model/eq';
 import type { AudioSource, EqStatus, OutputDevice } from '../model/types';
 import type { Action } from '../state/reducer';
 import { cx } from '../lib/cx';
+import { hueStyle } from '../lib/theme';
 import { EqEditor } from './EqEditor';
 import { EqStatusNote } from './EqStatusNote';
 import { LevelBar } from './Meters';
@@ -11,6 +12,8 @@ import { VolumeSlider } from './VolumeSlider';
 
 interface Props {
   source: AudioSource;
+  /** 这一路在列表里的位置，决定它的专属颜色 */
+  hue: number;
   device: OutputDevice | undefined;
   eqStatus: EqStatus;
   autostart: boolean | null;
@@ -18,10 +21,10 @@ interface Props {
 }
 
 /** 右列「控制单元」：当前选中这一路的音量、声音曲线，以及它所连设备的主音量 */
-export function Inspector({ source, device, eqStatus, autostart, dispatch }: Props) {
+export function Inspector({ source, hue, device, eqStatus, autostart, dispatch }: Props) {
   const { native } = useEngine();
   return (
-    <section className="inspector" aria-labelledby="inspector-title">
+    <section className="inspector" aria-labelledby="inspector-title" style={hueStyle(hue)}>
       <div className="eyebrow">控制单元</div>
 
       <header className="group-head">

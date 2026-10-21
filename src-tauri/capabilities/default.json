@@ -1,12 +1,13 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "主窗口：基础能力、事件监听、开机自启开关、用默认浏览器打开链接；音频命令由应用自己注册",
+  "description": "主窗口：基础能力、事件监听、开机自启开关、跟随主题切换标题栏深浅、用默认浏览器打开链接；音频命令由应用自己注册",
   "windows": [
     "main"
   ],
   "permissions": [
     "core:default",
+    "core:window:allow-set-theme",
     "autostart:default",
     "opener:default"
   ]

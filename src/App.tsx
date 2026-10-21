@@ -9,6 +9,7 @@ import { MockAudioEngine } from './engine/MockAudioEngine';
 import { TauriAudioEngine, isTauri } from './engine/TauriAudioEngine';
 import { useSoundFlow } from './state/useSoundFlow';
 import { Toggle } from './components/Toggle';
+import { ThemePicker } from './components/ThemePicker';
 
 type Boot = { status: 'loading' } | { status: 'ready'; snapshot: EngineSnapshot } | { status: 'error'; message: string };
 
@@ -103,6 +104,7 @@ function TopBar({ engine, flows, devices, autostart }: TopBarProps) {
         </div>
       </div>
       <div className="topbar-stats">
+        <ThemePicker />
         {flows !== undefined && (
           <span className="stat">
             <b>{flows}</b> 路声音流

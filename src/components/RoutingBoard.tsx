@@ -34,6 +34,7 @@ export function RoutingBoard({ state, dispatch, autostart }: Props) {
     );
   }
   const selectedDevice = state.devices.find((d) => d.id === selected.deviceId);
+  const hueOf = (id: string) => Math.max(0, state.sources.findIndex((s) => s.id === id));
 
   return (
     <section className="board" aria-labelledby="board-title">
@@ -87,6 +88,7 @@ export function RoutingBoard({ state, dispatch, autostart }: Props) {
         <div className="col col--inspector">
           <Inspector
             source={selected}
+            hue={hueOf(selected.id)}
             device={selectedDevice}
             eqStatus={state.eq}
             autostart={autostart}
@@ -94,7 +96,7 @@ export function RoutingBoard({ state, dispatch, autostart }: Props) {
           />
         </div>
 
-        {pending && <PendingWireLayer pending={pending} ports={ports} />}
+        {pending && <PendingWireLayer pending={pending} ports={ports} hue={hueOf(pending.sourceId)} />}
       </div>
     </section>
   );
